@@ -42,7 +42,6 @@ func main() {
 // 注意这里的 /proc 还是宿主机的
 // [root@shcCDFrh75vm7 4_mount]# go run main.go
 // sh-4.2# ps -ef // 使用 ps 来查看系统的进程
-// Error, do this: mount -t proc proc /proc
 // 将 /proc mount 到自己的 Namespace 下面来
 // sh-4.2# mount -t proc proc /proc
 // sh-4.2# ls /proc/
@@ -54,5 +53,5 @@ func main() {
 // UID        PID  PPID  C STIME TTY          TIME CMD
 // root         1     0  0 13:25 pts/2    00:00:00 sh
 // root         6     1  0 14:32 pts/2    00:00:00 ps -ef
-// sh 进程是PID 为 1。这就说明，当前的 Mount Namespace 中的 mount 和外部空间是隔离的，mount 操作并没有影响到外部。
+// sh 进程是 PID 为 1。这就说明，当前的 Mount Namespace 中的 mount 和外部空间是隔离的，mount 操作并没有影响到外部。
 // Docker volume 也是利用了这个特性。

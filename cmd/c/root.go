@@ -1,4 +1,4 @@
-package container
+package c
 
 import (
 	"bytes"
@@ -7,8 +7,6 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
-
-	"github.com/shipengqi/container/pkg/log"
 )
 
 // HelpTemplate is the help template for cert-manager commands
@@ -50,7 +48,7 @@ const examplesTemplate = `
   ./{{.}} log <container>           Apply the certificates.`
 
 const (
-	rootDesc = `This script is used to renew server and client certificates on all nodes.`
+	rootDesc = `Container is a simple container runtime implementation.`
 )
 
 func New() *cobra.Command {
@@ -62,27 +60,19 @@ func New() *cobra.Command {
 
 	c := &cobra.Command{
 		Use:     baseName + " [options]",
-		Short:   "Manages TLS certificates in CDF cluster.",
-		Long:    rootDesc,
+		Short:   rootDesc,
 		Example: buf.String(),
-		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if cmd.Name() == "help" {
-				return
-			}
-			log.Warn().Msg("Additional logging details can be found in:")
-			log.Warn().Msgf("    %s", log.Output)
-		},
-		PreRun: func(cmd *cobra.Command, args []string) {
-
-		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {},
+		PreRun: func(cmd *cobra.Command, args []string) {},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
+			return cmd.Help()
 		},
 	}
 
 	// Add sub commands
 	c.AddCommand(
-
+		newInit(),
+		newRun(),
 	)
 
 	cobra.EnableCommandSorting = false
