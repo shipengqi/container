@@ -12,8 +12,8 @@ func newInit() *cobra.Command {
 		Use:     "init [options]",
 		Short:   "Init container process run user's process in container.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.Infof("initializing: %s", args[0])
-			return container.InitProcess(args[0], nil)
+			log.Info("initializing")
+			return container.InitProcess()
 		},
 	}
 	c.DisableFlagsInUseLine = true

@@ -81,6 +81,7 @@ func New() *cobra.Command {
 	c.SilenceUsage = true
 	c.SilenceErrors = true
 
+	// c.DisableFlagParsing = true
 	c.SetUsageTemplate(usageTemplate)
 	c.DisableFlagsInUseLine = true
 	return c

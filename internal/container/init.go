@@ -1,9 +1,13 @@
 package container
 
 import (
+	"github.com/pkg/errors"
 	"github.com/shipengqi/container/pkg/log"
 	"go.uber.org/zap"
+	"io/ioutil"
 	"os"
+	"os/exec"
+	"strings"
 	"syscall"
 )
 
@@ -21,33 +25,46 @@ syscall.Exec 底层调用了 int execve(const char *filename, char *const argv[]
 也就是说，调用这个方法，将用户指定的进程运行起来，把最初的 init 进程给替换掉，这样当进入到容器内部的时候，就会发现容器内的第一个程序就是我们
 指定的进程了。这是 runc 的实现方式之一。
 */
-func InitProcess(command string, args []string) error {
+func InitProcess() error {
+	cmdArgs, err := readParentPipe()
+	if err != nil {
+		return err
+	}
+	if len(cmdArgs) < 1 {
+		return errors.New("user command not found")
+	}
 	mflags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
-	err := syscall.Mount("proc", "/proc", "proc", uintptr(mflags), "")
+	err = syscall.Mount("proc", "/proc", "proc", uintptr(mflags), "")
 	if err != nil {
 		log.Errort("mount", zap.Error(err))
 		return err
 	}
-	// 这个版本会出现下面的问题
-	// https://github.com/xianlubird/mydocker/issues/8
-	// 必须执行 mount -t proc proc /proc
 
-	// 这里命令要用绝路径，否则找不到
+	// exec.LookPath 寻找绝对路径
+	log.Debugf("find cmd path: %s", cmdArgs[0])
+	cmdPath, err := exec.LookPath(cmdArgs[0])
+	if err != nil {
+		log.Errort("exec.LookPath", zap.Error(err))
+		return err
+	}
 
-
-	// 下面的代码可以直接运行命令，例如： ./container run -it top
-	// argv := []string{"/bin/sh", "-c", command}
-	// log.Debugf("command: %s, args: %v", command, argv)
-	// err = syscall.Exec("/bin/sh", argv, os.Environ())
-
-	// 下面的代码可以执行 ./container run -it /bin/sh
-	argv := []string{command}
-	log.Debugf("command: %s, args: %v", command, argv)
-	err = syscall.Exec(command, argv, os.Environ())
+	log.Debugf("syscall.Exec cmd path: %s", cmdPath)
+	err = syscall.Exec(cmdPath, cmdArgs[0:], os.Environ())
 
 	if err != nil {
 		log.Errort("syscall.Exec", zap.Error(err))
 		return err
 	}
 	return nil
+}
+
+func readParentPipe() ([]string, error) {
+	// uintptr(3)，就是指 index 为 3 的文件描述符
+	pipe := os.NewFile(uintptr(3), "pipe")
+	msg, err := ioutil.ReadAll(pipe)
+	if err != nil {
+		log.Errorf("read pipe: %v", err)
+		return nil, err
+	}
+	return strings.Split(string(msg), " "), nil
 }

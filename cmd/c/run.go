@@ -20,7 +20,7 @@ func newRun() *cobra.Command {
 			}
 			log.Infof("running: %s", args[0])
 			log.Infof("running: %v", args)
-			a := action.NewRunAction(args[0])
+			a := action.NewRunAction(args, o)
 			return action.Execute(a)
 		},
 	}
@@ -30,5 +30,8 @@ func newRun() *cobra.Command {
 	f := c.Flags()
 	f.BoolVarP(&o.Interactive, "interactive", "i", false, "Keep STDIN open even if not attached")
 	f.BoolVarP(&o.TTY, "tty", "t",false, "Allocate a pseudo-TTY")
+	f.StringVarP(&o.MemoryLimit, "memory", "m","", "Memory limit")
+	f.StringVar(&o.CpuSet, "cpus","", "Number of CPUs")
+	f.StringVarP(&o.CpuShare, "cpu-shares", "c","", "CPU shares (relative weight)")
 	return c
 }
