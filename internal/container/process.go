@@ -44,5 +44,8 @@ func NewParentProcess(tty bool) (*exec.Cmd, *os.File, error) {
 	// lrwx------. 1 root root 64 Aug 20 13:48 2 -> /dev/pts/0
 	// lr-x------. 1 root root 64 Aug 20 13:48 3 -> /proc/4887/fd
 	cmd.ExtraFiles = []*os.File{rp}
+	// 先把下载好的 busybox 放到宿主机的 /root/busybox 目录下，然后 cmd.Dir = "/root/busybox"
+	// 会指定子进程初始化后的工作目录
+	cmd.Dir = "/root/busybox"
 	return cmd, wp, nil
 }

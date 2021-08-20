@@ -14,7 +14,7 @@ func IsDir(name string) bool {
 	return true
 }
 
-func IsExist(src string) bool {
+func IsNotExist(src string) bool {
 	_, err := os.Stat(src)
 
 	return os.IsNotExist(err)

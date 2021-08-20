@@ -33,13 +33,11 @@ func InitProcess() error {
 	if len(cmdArgs) < 1 {
 		return errors.New("user command not found")
 	}
-	mflags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
-	err = syscall.Mount("proc", "/proc", "proc", uintptr(mflags), "")
+
+	err = setUpMount()
 	if err != nil {
-		log.Errort("mount", zap.Error(err))
 		return err
 	}
-
 	// exec.LookPath 寻找绝对路径
 	log.Debugf("find cmd path: %s", cmdArgs[0])
 	cmdPath, err := exec.LookPath(cmdArgs[0])
