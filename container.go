@@ -17,7 +17,7 @@ func main() {
 	// 		ConsoleJson:    true,
 	// 		FileLevel:      "debug",
 	// 		ConsoleLevel:   "debug",
-	// 		Directory:      "/var/run/log/container",
+	// 		Directory:      "/var/run/q.container/log",
 	// 		Filename:       "c.log",
 	// 		MaxSize:        100,
 	// 		MaxBackups:     7,

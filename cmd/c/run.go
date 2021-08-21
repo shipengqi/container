@@ -35,5 +35,6 @@ func newRunCmd() *cobra.Command {
 	f.StringVarP(&o.CpuShare, "cpu-shares", "c","", "CPU shares (relative weight)")
 	f.StringVarP(&o.Volume, "volume", "v","", "Bind mount a volume")
 	f.BoolVarP(&o.Detach, "detach", "d",false, "Run container in background and print container ID")
+	f.StringVar(&o.Name, "name", "", "Assign a name to the container")
 	return c
 }

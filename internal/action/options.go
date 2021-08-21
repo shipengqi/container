@@ -8,4 +8,5 @@ type RunActionOptions struct {
 	MemoryLimit string
 	CpuShare    string
 	Volume      string
+	Name        string
 }
