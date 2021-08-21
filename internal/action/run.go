@@ -41,18 +41,21 @@ func (r *run) Name() string {
 
 func (r *run) Run() error {
 	log.Debugf("***** %s Run *****", strings.ToUpper(r.name))
-	p, wp, err := container.NewParentProcess(r.options.TTY, r.options.Volume)
+	containerId := containerId(10)
+	p, wp, err := container.NewParentProcess(r.options.TTY, r.options.Volume, containerId)
 	if err := p.Start(); err != nil {
 		log.Errort("parent run", zap.Error(err))
 		return err
 	}
 
 	// save container info
-	containerId, err := saveContainerInfo(p.Process.Pid, r.cmdArgs, r.options.Name)
+	containerName, err := saveContainerInfo(p.Process.Pid, r.cmdArgs, r.options.Name, containerId)
 	if err != nil {
 		log.Errorf("save container info error %v", err)
 		return err
 	}
+
+	log.Debugf("container id: %s, name: %s", containerId, containerName)
 
 	// 由于要实现后台运行，所以这里暂时去掉 delete workspace
 	mntUrl := "/root/mnt/"
@@ -130,15 +133,14 @@ func containerId(n int) string {
 	return string(b)
 }
 
-func saveContainerInfo(containerPID int, commandArray []string, containerName string) (string, error) {
-	id := containerId(10)
+func saveContainerInfo(containerPID int, commandArray []string, containerName, containerId string) (string, error) {
 	createTime := time.Now().Format("2006-01-02 15:04:05")
 	command := strings.Join(commandArray, "")
 	if containerName == "" {
-		containerName = id
+		containerName = containerId
 	}
 	info := &container.Information{
-		Id:          id,
+		Id:          containerId,
 		Pid:         strconv.Itoa(containerPID),
 		Command:     command,
 		CreatedTime: createTime,
@@ -170,7 +172,7 @@ func saveContainerInfo(containerPID int, commandArray []string, containerName st
 		return "", err
 	}
 
-	return id, nil
+	return containerName, nil
 }
 
 func deleteContainerInfo(containerId string) {

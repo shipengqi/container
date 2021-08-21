@@ -29,7 +29,7 @@ syscall.Exec 底层调用了 int execve(const char *filename, char *const argv[]
 func InitProcess() error {
 	cmdArgs, err := readParentPipe()
 	if err != nil {
-		log.Errorf("read pipe: %s", err)
+		log.Errorf("read parent pipe: %s", err)
 		return err
 	}
 	if len(cmdArgs) < 1 {

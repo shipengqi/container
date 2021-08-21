@@ -9,6 +9,7 @@ const (
 var (
 	DefaultInfoLocation = "/var/run/q.container/%s/"
 	ConfigName          = "config.json"
+	LogFileName         = "container.log"
 )
 
 type Information struct {
