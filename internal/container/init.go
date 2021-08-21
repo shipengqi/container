@@ -1,14 +1,15 @@
 package container
 
 import (
-	"github.com/pkg/errors"
-	"github.com/shipengqi/container/pkg/log"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 	"syscall"
+
+	"github.com/pkg/errors"
+	"github.com/shipengqi/container/pkg/log"
+	"go.uber.org/zap"
 )
 
 /*
@@ -28,12 +29,14 @@ syscall.Exec 底层调用了 int execve(const char *filename, char *const argv[]
 func InitProcess() error {
 	cmdArgs, err := readParentPipe()
 	if err != nil {
+		log.Errorf("read pipe: %s", err)
 		return err
 	}
 	if len(cmdArgs) < 1 {
 		return errors.New("user command not found")
 	}
 
+	log.Debugf("setting mount")
 	err = setUpMount()
 	if err != nil {
 		return err
