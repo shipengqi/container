@@ -29,3 +29,32 @@ tar -xvf busybox . tar -C busybox/
 # [root@shcCDFrh75vm7 ~]# ls busybox/
 bin  dev  etc  home  lib  lib64  proc  root  sys  tmp  usr  var  version.txt
 ```
+
+
+使用 AUFS 创建容器文件系统的实现过程如下。
+启动容器的时候：
+
+1. 建只读层（busybox）
+2. 创建容器读写层（writeLayer）
+3. 创建挂载点（mnt），井把只读层和读写层挂载到挂载点
+4. 将挂载点作为容器的根目录
+
+
+容器退出：
+1. umount 挂载点
+2. 删除挂载点
+3. 删除读写层（writeLayer）
+
+实现 volume，创建容器文件系统的过程如下：
+
+1. 建只读层
+2. 创建容器读写层
+3. 创建挂载点，井把只读层和读写层挂载到挂载点
+4. 接下来首先判断 volume 是否为空，如果是，就表示用户并没有使用 volume 结束创建 volume。
+5. 如果不为空，则解析 volume 字符串。
+6. 来挂载数据卷。
+
+挂载数据卷的过程：
+1. 读取宿主机文件目录 Url，创建宿主机文件目录（/root/<parentUrl>）
+2. 读取容器挂载点目录 Url，在容器文件系统里创建挂载点（/root/mnt/<containerUrl>）
+3. 把宿主机文件目录挂载到容器挂载点

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -17,7 +18,7 @@ import (
 // 容器中进行的操作不会对镜像产生任何影响的功能
 
 // NewWorkSpace Create a AUFS filesystem as container root workspace
-func NewWorkSpace(rootUrl string, mntUrl string) error {
+func NewWorkSpace(rootUrl, mntUrl, volume string) error {
 	err := CreateReadOnlyLayer(rootUrl)
 	if err != nil {
 		return err
@@ -29,6 +30,11 @@ func NewWorkSpace(rootUrl string, mntUrl string) error {
 	err = CreateMountPoint(rootUrl, mntUrl)
 	if err != nil {
 		return err
+	}
+
+	// if volume length > 0，创建 volume
+	if len(volume) > 0 {
+		return CreateVolume(mntUrl, volume)
 	}
 	return nil
 }
@@ -106,50 +112,26 @@ func CreateMountPoint(rootUrl string, mntUrl string) error {
 	return nil
 }
 
-// https://askubuntu.com/questions/109413/how-do-i-use-overlayfs
-// https://www.wumingx.com/k8s/docker-rootfs.html
-// https://blog.csdn.net/luckyapple1028/article/details/78075358
-
-// Overlay test
-// [root@shcCDFrh75vm7 ~]# mkdir testoverlay
-// [root@shcCDFrh75vm7 ~]# cd testoverlay/
-// [root@shcCDFrh75vm7 testoverlay]# ls
-// [root@shcCDFrh75vm7 testoverlay]# mkdir low1 low2 up1 merge work
-// [root@shcCDFrh75vm7 testoverlay]#
-// [root@shcCDFrh75vm7 testoverlay]#
-// [root@shcCDFrh75vm7 testoverlay]# ls
-// low1  low2  merge  up1  work
-// [root@shcCDFrh75vm7 testoverlay]# touch ./low1/low1f
-// [root@shcCDFrh75vm7 testoverlay]# touch ./low2/low2f
-// [root@shcCDFrh75vm7 testoverlay]# touch ./up1/up1f
-// [root@shcCDFrh75vm7 testoverlay]# mount -t overlay overlay -o lowerdir=low1,upperdir=up1 merge
-// mount: mount overlay on /root/testoverlay/merge failed: Operation not supported
-// [root@shcCDFrh75vm7 testoverlay]# mount -t overlay overlay -o lowerdir=low1,upperdir=up1,workdir=work merge
-// [root@shcCDFrh75vm7 testoverlay]# cd work/
-// [root@shcCDFrh75vm7 work]# ls
-// work
-// [root@shcCDFrh75vm7 work]# cd work/
-// [root@shcCDFrh75vm7 work]# ls
-// [root@shcCDFrh75vm7 work]# cd ..
-// [root@shcCDFrh75vm7 work]# cd ..
-// [root@shcCDFrh75vm7 testoverlay]# ls
-// low1  low2  merge  up1  work
-// [root@shcCDFrh75vm7 testoverlay]# cd merge/
-// [root@shcCDFrh75vm7 merge]# ls
-// low1f  up1f
-
 // DeleteWorkSpace Delete the AUFS filesystem while container exit
-func DeleteWorkSpace(rootUrl string, mntUrl string){
-	DeleteMountPoint(rootUrl, mntUrl)
+func DeleteWorkSpace(rootUrl, mntUrl, volume string) {
+	if len(volume) > 0 {
+		volumeUrls := volumeUrlExtract(volume)
+		if len(volumeUrls) == 2 && len(volumeUrls[0]) > 0 && len(volumeUrls[1]) > 0{
+			DeleteMountPointWithVolume(mntUrl, volumeUrls)
+		}
+	} else {
+		DeleteMountPoint(mntUrl)
+	}
+
 	DeleteWriteLayer(rootUrl)
 }
 
-func DeleteMountPoint(rootUrl string, mntUrl string){
+func DeleteMountPoint(mntUrl string) {
 	cmd := exec.Command("umount", mntUrl)
-	cmd.Stdout=os.Stdout
-	cmd.Stderr=os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		log.Errorf("%v",err)
+		log.Errorf("%v", err)
 	}
 	// if err := os.RemoveAll(mntUrl); err != nil {
 	// 	log.Errorf("Remove dir %s error %v", mntUrl, err)
@@ -161,4 +143,77 @@ func DeleteWriteLayer(rootUrl string) {
 	if err := os.RemoveAll(writeUrl); err != nil {
 		log.Errorf("Remove dir %s error %v", writeUrl, err)
 	}
+}
+
+func DeleteMountPointWithVolume(mntUrl string, volumeUrls []string){
+	containerUrl := mntUrl + volumeUrls[1]
+	cmd := exec.Command("umount", containerUrl)
+	cmd.Stdout=os.Stdout
+	cmd.Stderr=os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Umount volume failed. %v",err)
+	}
+
+	cmd = exec.Command("umount", mntUrl)
+	cmd.Stdout=os.Stdout
+	cmd.Stderr=os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Umount mountpoint failed. %v",err)
+	}
+
+	if err := os.RemoveAll(mntUrl); err != nil {
+		log.Infof("Remove mountpoint dir %s error %v", mntUrl, err)
+	}
+}
+
+func CreateVolume(mntUrl, volume string) error {
+	volumeUrls := volumeUrlExtract(volume)
+	if len(volumeUrls) < 2 {
+		return errors.New("volume parameter is not correct")
+	}
+	if len(volumeUrls[0]) == 0 || len(volumeUrls[1]) == 0 {
+		return errors.New("volume parameter cannot not be empty")
+	}
+	return MountVolume(mntUrl, volumeUrls)
+}
+
+func MountVolume(mntUrl string, volumeUrls []string) error {
+	parentUrl := volumeUrls[0]
+	parentROUrl := volumeUrls[0] + ".ro"
+	if utils.IsNotExist(parentUrl) {
+		if err := os.Mkdir(parentUrl, 0777); err != nil {
+			log.Infof("Mkdir parent dir %s error. %v", parentUrl, err)
+		}
+	}
+	if utils.IsNotExist(parentROUrl) {
+		if err := os.Mkdir(parentROUrl, 0777); err != nil {
+			log.Infof("Mkdir parent ro dir %s error. %v", parentROUrl, err)
+		}
+	}
+
+	containerUrl := volumeUrls[1]
+	containerVolumeUrl := mntUrl + containerUrl
+	log.Debugf("volume container url: %s", containerVolumeUrl)
+	if utils.IsNotExist(containerVolumeUrl) {
+		if err := os.Mkdir(containerVolumeUrl, 0777); err != nil {
+			log.Infof("Mkdir container dir %s error. %v", containerVolumeUrl, err)
+		}
+	}
+	workUrl := "/root/q.container.work"
+	dirs := fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", parentROUrl, parentUrl, workUrl)
+	log.Debugf("volume dirs: %s", dirs)
+	cmd := exec.Command("mount", "-t", "overlay", "overlay", "-o", dirs, containerVolumeUrl)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Errorf("mount volume: %v", err)
+		return err
+	}
+	return nil
+}
+
+func volumeUrlExtract(volume string) []string {
+	var volumeUrls []string
+	volumeUrls = strings.Split(volume, ":")
+	return volumeUrls
 }

@@ -6,4 +6,5 @@ type RunActionOptions struct {
 	CpuSet      string
 	MemoryLimit string
 	CpuShare    string
+	Volume      string
 }

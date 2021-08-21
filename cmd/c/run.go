@@ -33,5 +33,6 @@ func newRun() *cobra.Command {
 	f.StringVarP(&o.MemoryLimit, "memory", "m","", "Memory limit")
 	f.StringVar(&o.CpuSet, "cpus","", "Number of CPUs")
 	f.StringVarP(&o.CpuShare, "cpu-shares", "c","", "CPU shares (relative weight)")
+	f.StringVarP(&o.Volume, "volume", "v","", "Bind mount a volume")
 	return c
 }
