@@ -76,6 +76,7 @@ func New() *cobra.Command {
 		newCommitCmd(),
 		newListCmd(),
 		newLogsCmd(),
+		newExecCmd(),
 	)
 
 	cobra.EnableCommandSorting = false

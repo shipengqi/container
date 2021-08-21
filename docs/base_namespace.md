@@ -37,3 +37,17 @@ Mount Namespace 用来隔离各个进程看到的挂载点视图。在不同 Nam
 因此，它的系统调用参数是 `NEWNS` (New Namespace 的缩写）。当时人们貌似没有意识到，以后还会有很多类型的 Namespace 加入。
 User Namespace 主要是隔离用户的用户组 ID。
 Network Namespace 是用来隔离网络设备、IP 地址端口等网络栈的 Namespace。
+
+
+
+## setns
+
+setns 是一个系统调用，可以根据提供的 PID 再次进入到指定的 Namespace 中。它需要先打开 `/proc/[pid]/ns/` 文件夹下对应的文件，然后使当前进程
+进入到指定的 Namespace 中。
+
+对于 Go 来说很，一个具有多线程的进程是无法使用 setns 调用进入到对应的命名空间的。但是，Go 每启动一个程序就会进入多线程状态，因此无法简单地
+在 Go 里面直接调用系统调用，使当前的进程进入对应的 Mount Namespace 。这里需要借助 C 来实现这个功能。
+
+### Cgo
+Cgo 允许 Go 程序去调用C 的函数与标准库。只需要以一种特殊的方式在 Go 的源代码里写出需要调用的 C 的代码，Cgo 就可以把你的 C 源码文件和 Go 文件
+整合成一个包。
