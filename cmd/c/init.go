@@ -1,13 +1,14 @@
 package c
 
 import (
+	"github.com/spf13/cobra"
+
 	"github.com/shipengqi/container/internal/container"
 	"github.com/shipengqi/container/pkg/log"
-	"github.com/spf13/cobra"
 )
 
 
-func newInit() *cobra.Command {
+func newInitCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:     "init [options]",
 		Short:   "Init container process run user's process in container.",

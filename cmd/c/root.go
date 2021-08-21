@@ -71,8 +71,9 @@ func New() *cobra.Command {
 
 	// Add sub commands
 	c.AddCommand(
-		newInit(),
-		newRun(),
+		newInitCmd(),
+		newRunCmd(),
+		newCommitCmd(),
 	)
 
 	cobra.EnableCommandSorting = false

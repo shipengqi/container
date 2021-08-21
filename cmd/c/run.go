@@ -2,14 +2,14 @@ package c
 
 import (
 	"github.com/pkg/errors"
-	"github.com/shipengqi/container/pkg/log"
 	"github.com/spf13/cobra"
 
 	"github.com/shipengqi/container/internal/action"
+	"github.com/shipengqi/container/pkg/log"
 )
 
 
-func newRun() *cobra.Command {
+func newRunCmd() *cobra.Command {
 	o := &action.RunActionOptions{}
 	c := &cobra.Command{
 		Use:   "run [options]",
