@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/shipengqi/container/internal/cgroups/manager"
@@ -39,9 +40,11 @@ func (r *run) Run() error {
 		log.Errort("parent run", zap.Error(err))
 		return err
 	}
-	mntUrl := "/root/mnt/"
-	rootUrl := "/root/"
-	defer container.DeleteWorkSpace(rootUrl, mntUrl, r.options.Volume)
+	// 由于要实现后台运行，所以这里暂时去掉 delete workspace
+	// mntUrl := "/root/mnt/"
+	// rootUrl := "/root/"
+	// defer container.DeleteWorkSpace(rootUrl, mntUrl, r.options.Volume)
+
 	// use q.container.cgroup as group name
 	// create cgroup manager
 	cgroupManager := manager.New("q.container.cgroup")
@@ -68,10 +71,20 @@ func (r *run) Run() error {
 		log.Errort("notify", zap.Error(err))
 		return err
 	}
-    err = p.Wait()
-	if err != nil {
-		log.Errort("parent wait", zap.Error(err))
-		return err
+	log.Infof("tty %v", r.options.TTY)
+	if r.options.TTY {
+		err = p.Wait()
+		if err != nil {
+			log.Errort("parent wait", zap.Error(err))
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *run) PreRun() error {
+	if r.options.TTY && r.options.Detach {
+		return errors.New("--tty and --detach flags cannot both provided")
 	}
 	return nil
 }
@@ -89,31 +102,5 @@ func notifyInitProcess(cmdArgs []string, wp *os.File) error {
 	return nil
 }
 
-// [root@shcCDFrh75vm7 container]# ./container run -it -m 100m --cpus 1 -v /root/q.container.volume:containervolume /bin/sh
-// 2021-08-21T15:55:29.303+0800	INFO	running: /bin/sh
-// 2021-08-21T15:55:29.303+0800	INFO	running: [/bin/sh]
-// 2021-08-21T15:55:29.303+0800	DEBUG	***** [RUN] PreRun *****
-// 2021-08-21T15:55:29.304+0800	DEBUG	***** RUN Run *****
-// 2021-08-21T15:55:29.351+0800	DEBUG	volume container url: /root/mnt/containervolume
-// 2021-08-21T15:55:29.351+0800	DEBUG	volume dirs: lowerdir=/root/q.container.volume.ro,upperdir=/root/q.container.volume,workdir=/root/q.container.work
-// 2021-08-21T15:55:29.403+0800	INFO	send cmd: /bin/sh
-// 2021-08-21T15:55:29.403+0800	INFO	send cmd: /bin/sh success
-// 2021-08-21T15:55:29.406+0800	INFO	initializing
-// 2021-08-21T15:55:29.406+0800	DEBUG	setting mount
-// 2021-08-21T15:55:29.406+0800	DEBUG	pwd: /root/mnt
-// 2021-08-21T15:55:29.453+0800	DEBUG	find cmd path: /bin/sh
-// 2021-08-21T15:55:29.454+0800	DEBUG	syscall.Exec cmd path: /bin/sh
-// / # /bin/ls
-// bin              dev              home             lib64            root             tmp              var
-// containervolume  etc              lib              proc             sys              usr              version.txt
-// / # cd containervolume/
-// /containervolume # /bin/ls
-// ro
-// /containervolume # cp /version.txt ./
-// /bin/sh: cp: not found
-// /containervolume # /bin/cp /version.txt ./
-// /containervolume # /bin/ls
-// ro           version.txt
-// /containervolume # /bin/ls
-// version.txt
-// /containervolume # /bin/rm -rf version.txt
+// 如果 -d 运行后子进程没有被 init 进程托管，可能是 top 命令出错了,可以先以 -ti 的形式进入程序，运行 top 命令，如果 top 运行失败，ps -ef 时
+// 自然是看不到子进程的
