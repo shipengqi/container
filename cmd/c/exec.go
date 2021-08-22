@@ -1,9 +1,6 @@
 package c
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -11,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/shipengqi/container/internal/container"
 	_ "github.com/shipengqi/container/internal/nsenter"
 	"github.com/shipengqi/container/pkg/log"
 )
@@ -77,14 +73,8 @@ func ExecContainer(containerId string, cmdArray []string) {
 }
 
 func getContainerPid(containerId string) (string, error) {
-	dirURL := fmt.Sprintf(container.DefaultInfoLocation, containerId)
-	configFilePath := dirURL + container.ConfigName
-	contentBytes, err := ioutil.ReadFile(configFilePath)
+	info, err := getContainerInfoById(containerId)
 	if err != nil {
-		return "", err
-	}
-	var info container.Information
-	if err := json.Unmarshal(contentBytes, &info); err != nil {
 		return "", err
 	}
 	return info.Pid, nil
