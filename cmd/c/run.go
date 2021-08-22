@@ -5,7 +5,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/shipengqi/container/internal/action"
-	"github.com/shipengqi/container/pkg/log"
 )
 
 
@@ -15,11 +14,9 @@ func newRunCmd() *cobra.Command {
 		Use:   "run [options]",
 		Short: "Create a container with namespace and cgroups limit.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) < 1 {
-				return errors.New("missing container command")
+			if len(args) < 2 {
+				return errors.New("missing image or container command")
 			}
-			log.Infof("running: %s", args[0])
-			log.Infof("running: %v", args)
 			a := action.NewRunAction(args, o)
 			return action.Execute(a)
 		},

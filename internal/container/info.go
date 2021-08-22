@@ -1,15 +1,19 @@
 package container
 
 const (
-	StatusRunning string = "running"
-	StatusStop    string = "stopped"
-	StatusExit    string = "exited"
+	StatusRunning = "running"
+	StatusStop    = "stopped"
+	StatusExit    = "exited"
 )
 
 var (
 	DefaultInfoLocation = "/var/run/q.container/%s/"
 	ConfigName          = "config.json"
 	LogFileName         = "container.log"
+	RootUrl             = "/root"
+	MntUrl              = "/root/mnt/%s"
+	WriteLayerUrl       = "/root/writeLayer/%s"
+	TmpWorkUrl          = "/root/q.container.work"
 )
 
 type Information struct {
@@ -19,4 +23,5 @@ type Information struct {
 	Command     string `json:"command"`    // 容器内 init 运行命令
 	CreatedTime string `json:"createTime"` // 创建时间
 	Status      string `json:"status"`     // 容器的状态
+	Volume      string `json:"volume"`     // 容器的数据卷
 }

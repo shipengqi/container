@@ -34,7 +34,7 @@ func newStopCmd() *cobra.Command {
 func stopContainer(containerId string) {
 	info, err := getContainerInfoById(containerId)
 	if err != nil {
-		log.Errorf("Get getContainerInfoById pid by name %s error %v", containerId, err)
+		log.Errorf("Get getContainerInfoById pid %s error %v", containerId, err)
 		return
 	}
 	pidInt, err := strconv.Atoi(info.Pid)

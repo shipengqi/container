@@ -22,15 +22,21 @@ import (
 type run struct {
 	*action
 
+	imgName string
 	options *RunActionOptions
 }
 
-func NewRunAction(cmdArgs []string, options *RunActionOptions) Interface {
+func NewRunAction(args []string, options *RunActionOptions) Interface {
+	imageName := args[0]
+	cmdArgs := args[1:]
+	log.Infof("image name: %s", imageName)
+	log.Infof("command: %v", cmdArgs)
 	return &run{
 		action: &action{
 			name:    "run",
 			cmdArgs: cmdArgs,
 		},
+		imgName: imageName,
 		options: options,
 	}
 }
@@ -42,7 +48,7 @@ func (r *run) Name() string {
 func (r *run) Run() error {
 	log.Debugf("***** %s Run *****", strings.ToUpper(r.name))
 	containerId := containerId(10)
-	p, wp, err := container.NewParentProcess(r.options.TTY, r.options.Volume, containerId)
+	p, wp, err := container.NewParentProcess(r.options.TTY, r.options.Volume, containerId, r.imgName)
 	if err := p.Start(); err != nil {
 		log.Errort("parent run", zap.Error(err))
 		return err
@@ -56,10 +62,6 @@ func (r *run) Run() error {
 	}
 
 	log.Debugf("container id: %s, name: %s", containerId, containerName)
-
-	// 由于要实现后台运行，所以这里暂时去掉 delete workspace
-	mntUrl := "/root/mnt/"
-	rootUrl := "/root/"
 
 	// use q.container.cgroup as group name
 	// create cgroup manager
@@ -92,7 +94,7 @@ func (r *run) Run() error {
 		err = p.Wait()
 		// tty 方式创建的容器，在容器退出后，需要删除容器的相关信息
 		deleteContainerInfo(containerId)
-		container.DeleteWorkSpace(rootUrl, mntUrl, r.options.Volume)
+		container.DeleteWorkSpace(r.options.Volume, containerId)
 		if err != nil {
 			log.Errort("parent wait", zap.Error(err))
 			return err
@@ -181,21 +183,3 @@ func deleteContainerInfo(containerId string) {
 		log.Errorf("remove dir %s error %v", dirURL, err)
 	}
 }
-
-// [root@shcCDFrh75vm7 container]# ./container run -it -m 100m --cpus 1 /bin/sh
-// 2021-08-21T20:34:47.917+0800	INFO	running: /bin/sh
-// 2021-08-21T20:34:47.917+0800	INFO	running: [/bin/sh]
-// 2021-08-21T20:34:47.917+0800	DEBUG	***** RUN Run *****
-// 2021-08-21T20:34:47.976+0800	INFO	send cmd: /bin/sh
-// 2021-08-21T20:34:47.976+0800	INFO	send cmd: /bin/sh success
-// 2021-08-21T20:34:47.976+0800	INFO	tty true
-// 2021-08-21T20:34:47.980+0800	INFO	initializing
-// 2021-08-21T20:34:47.980+0800	DEBUG	setting mount
-// 2021-08-21T20:34:47.980+0800	DEBUG	pwd: /root/mnt
-// 2021-08-21T20:34:48.035+0800	DEBUG	find cmd path: /bin/sh
-// 2021-08-21T20:34:48.035+0800	DEBUG	syscall.Exec cmd path: /bin/sh
-// / #
-// 打开一个新的 terminal
-// [root@shcCDFrh75vm7 container]# ./container ps
-// ID           NAME         PID         STATUS      COMMAND     CREATED
-// 6573986770   6573986770   8781        running     /bin/sh     2021-08-21 20:34:47
