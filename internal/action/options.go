@@ -9,4 +9,5 @@ type RunActionOptions struct {
 	CpuShare    string
 	Volume      string
 	Name        string
+	Envs        []string
 }

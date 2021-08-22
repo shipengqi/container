@@ -17,7 +17,7 @@ NewParentProcess create a parent process
 3. clone 参数就是 fork 出来一个 namespace 隔离的进程环境
 4. tty enabled，就把当前进程的输入输出导入到标准输入输出
 */
-func NewParentProcess(tty bool, volume, containerId, imgName string) (*exec.Cmd, *os.File, error) {
+func NewParentProcess(tty bool, volume, containerId, imgName string, envs []string) (*exec.Cmd, *os.File, error) {
 	rp, wp, err := NewPipe()
 	if err != nil {
 		log.Errorf("new pipe: %v", err)
@@ -52,7 +52,13 @@ func NewParentProcess(tty bool, volume, containerId, imgName string) (*exec.Cmd,
 	}
 
 	cmd.ExtraFiles = []*os.File{rp}
-
+	// os.Environ 环境变量就是系统默认的配置
+	// 默认情况下，新启动进程的环境变量都是继承于原来父进程的环境变量，但是如果手动指定了环境变量，那么这里就会覆盖掉原来继承自父进程的变量。
+	// 由于在容器的进程中，有时候还需要使用原来父进程的环境变量，比如 PATH 等，因此这里会使用 os.Environ 来获
+	// 取宿主机的环境变量，然后把自定义的变量加进去
+	// Environ returns a copy of strings representing the environment,
+	// in the form "key=value".
+	cmd.Env = append(os.Environ(), envs...)
 	mntUrl, err := NewWorkSpace(volume, imgName, containerId)
 	if err != nil {
 		log.Errorf("workspace: %v", err)

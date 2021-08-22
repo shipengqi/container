@@ -15,7 +15,7 @@ import (
 func newCommitCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:     "commit [options]",
-		Short:   "Create a new image from a container's changes.",
+		Short:   "Create a new image from a container's changes",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
 				return errors.New("missing container id os image name")

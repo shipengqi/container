@@ -15,7 +15,7 @@ import (
 func newRemoveContainerCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:     "rm [options]",
-		Short:   "Remove one container.",
+		Short:   "Remove one container",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("missing container id")

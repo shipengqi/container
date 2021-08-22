@@ -1,6 +1,8 @@
 package c
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -20,7 +22,7 @@ const (
 func newExecCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:   "exec [options]",
-		Short: "Run a command in a running container.",
+		Short: "Run a command in a running container",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// This is for callback
 			if os.Getenv(EnvExecPid) != "" {
@@ -64,6 +66,10 @@ func ExecContainer(containerId string, cmdArray []string) {
 	err = os.Setenv(EnvExecPid, pid)
 	err = os.Setenv(EnvExecCmd, cmdStr)
 
+	// 获取对应的 PID 环境变量，也就是容器的环境变量
+	containerEnvs := getEnvsByPid(pid)
+	cmd.Env = append(os.Environ(), containerEnvs...)
+
 	// 去 run 这里的进程时，实际上就是又运行了一遍自己的程序，但是这时有一点不同的就是，
 	// 再一次运行的时候已经指定了环境变量，所以 C 代码执行的时候就能拿到对应的环境变量，
 	// 便可以进入到指定的 Namespace 中进行操作了。
@@ -80,24 +86,28 @@ func getContainerPid(containerId string) (string, error) {
 	return info.Pid, nil
 }
 
-// [root@shcCDFrh75vm7 container]# ./container run -it -m 100m --cpus 1 /bin/sh
-// 2021-08-22T07:53:31.425+0800	INFO	running: /bin/sh
-// 2021-08-22T07:53:31.426+0800	INFO	running: [/bin/sh]
-// 2021-08-22T07:53:31.426+0800	DEBUG	***** RUN Run *****
-// 2021-08-22T07:53:31.558+0800	DEBUG	container id: 2665239328, name: 2665239328
-// 2021-08-22T07:53:31.561+0800	INFO	send cmd: /bin/sh
-// 2021-08-22T07:53:31.561+0800	INFO	send cmd: /bin/sh success
-// 2021-08-22T07:53:31.561+0800	INFO	tty true
-// 2021-08-22T07:53:31.563+0800	INFO	initializing
-// 2021-08-22T07:53:31.564+0800	DEBUG	setting mount
-// 2021-08-22T07:53:31.564+0800	DEBUG	pwd: /root/mnt
-// 2021-08-22T07:53:31.622+0800	DEBUG	find cmd path: /bin/sh
-// 2021-08-22T07:53:31.622+0800	DEBUG	syscall.Exec cmd path: /bin/sh
-// / #
-// 打开一个新的 terminal
-// [root@shcCDFrh75vm7 container]# ./container exec 2665239328 /bin/sh
-// 2021-08-22T07:53:47.860+0800	INFO	container pid 17202
-// 2021-08-22T07:53:47.860+0800	INFO	command /bin/sh
-// / # /bin/ls
-// bin          dev          etc          home         lib          lib64        proc         root         sys          tmp          usr          var          version.txt
-// / # exit
+// 修改 exec 命令来直接使用 env 命令查看容器内环境变量的功能。
+func getEnvsByPid(pid string) []string {
+	path := fmt.Sprintf("/proc/%s/environ", pid)
+	contentBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Errorf("Read file %s error %v", path, err)
+		return nil
+	}
+	// [root@shcCDFrh75vm7 container]# cat /proc/self/environ
+	// XDG_SESSION_ID=732HOSTNAME=shcCDFrh75vm7.hpeswlab.netSELINUX_ROLE_REQUESTED=TERM=xtermSHELL=/bin/bashHISTSIZE=1000
+	// SSH_CLIENT=15.122.67.231 59439 22SELINUX_USE_CURRENT_RANGE=SSH_TTY=/dev/pts/0NO_PROXY=127.0.0.1,localhost,.hpe.com,.hp.com,.hpeswlab.net
+	// http_proxy=http://web-proxy.jp.softwaregrp.net:8080
+	// \u 开头的是一个 Unicode 码的字符,每一个 '\u0000' 都代表了一个空格。
+	// env split by \u0000
+	envs := strings.Split(string(contentBytes), "\u0000")
+	return envs
+}
+
+// [root@shcCDFrh75vm7 container]# ./container exec 5867115283 /bin/sh
+// 2021-08-22T11:11:57.864+0800	INFO	container pid 21164
+// 2021-08-22T11:11:57.864+0800	INFO	command /bin/sh
+// / # echo $test1
+// 111
+// / # echo $test2
+// 222

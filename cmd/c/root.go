@@ -48,7 +48,7 @@ const examplesTemplate = `
   ./{{.}} log <container>           Apply the certificates.`
 
 const (
-	rootDesc = `Container is a simple container runtime implementation.`
+	rootDesc = `Container is a simple container runtime implementation`
 )
 
 func New() *cobra.Command {

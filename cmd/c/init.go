@@ -11,7 +11,7 @@ import (
 func newInitCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:     "init [options]",
-		Short:   "Init container process run user's process in container.",
+		Short:   "Init container process run user's process in container",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log.Info("initializing")
 			return container.InitProcess()

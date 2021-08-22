@@ -17,7 +17,7 @@ import (
 func newListCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:     "ps [options]",
-		Short:   "List containers.",
+		Short:   "List containers",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ListContainers()
 			return nil

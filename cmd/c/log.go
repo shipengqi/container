@@ -16,7 +16,7 @@ import (
 func newLogsCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:     "logs [options]",
-		Short:   "Fetch the logs of a container.",
+		Short:   "Fetch the logs of a container",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("Please input your container id")
