@@ -39,3 +39,17 @@ type Driver interface {
 	// Disconnect remove container Endpoint in Network
 	Disconnect(network Network, endpoint *Endpoint) error
 }
+
+func CreateNetwork(driver, name, subnet string)  {
+	// ParseCIDR 将网段的字符串转为 net.IPNet 对象
+	// ParseCIDR parses s as a CIDR notation IP address and prefix length,
+	// like "192.0.2.0/24" or "2001:db8::/32", as defined in
+	// RFC 4632 and RFC 4291.
+	//
+	// It returns the IP address and the network implied by the IP and
+	// prefix length.
+	// For example, ParseCIDR("192.0.2.1/24") returns the IP address
+	// 192.0.2.1 and the network 192.0.2.0/24.
+	_, cidr, _ := net.ParseCIDR(subnet)
+	// 通过 IPAM 分配的网关 IP，获取到网段中的第一个 IP 作为网关 IP
+}

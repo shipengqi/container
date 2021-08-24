@@ -11,3 +11,8 @@ type RunActionOptions struct {
 	Name        string
 	Envs        []string
 }
+
+type NetWorkCreateActionOptions struct {
+	Subnet string
+	Driver string
+}

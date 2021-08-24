@@ -39,3 +39,7 @@ iptables -t nat -A PREROUTING -p tcp -m tcp --dport 80 -j DNAT --to-destination 
 ```
 
 这样就可以把宿主机上 80 端口的 TCP 请求转发到 Namespace 中的地址 `172.18.0.2:80`，从而实现外部的应用调用。
+
+### IPAM
+
+IPAM 也是网络功能中的一个组件，用于网络 IP 地址的分配和释放，包括容器的 IP 地址和网络网关的 IP 地址。
