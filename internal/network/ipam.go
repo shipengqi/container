@@ -2,13 +2,13 @@ package network
 
 import (
 	"encoding/json"
-	"github.com/shipengqi/container/pkg/log"
 	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/shipengqi/container/pkg/log"
 	"github.com/shipengqi/container/pkg/utils"
 )
 
@@ -81,7 +81,7 @@ func (i *IPAM) Allocate(subnet *net.IPNet) (ip net.IP, err error) {
 	return
 }
 
-func (i *IPAM) Release() error {
+func (i *IPAM) Release(subnet *net.IPNet, ipaddr *net.IP) error {
 	i.Subnets = &map[string]string{}
 	err := i.load()
 	if err != nil {
@@ -91,6 +91,25 @@ func (i *IPAM) Release() error {
 	// 计算 ip 地址在位图数组中的索引
 	c := 0
 	// 将 ip 地址转换成 4 个字节的表示方式
+	releaseIP := ipaddr.To4()
+	// 由于 IP 是从 1 开始分配的，所以转换成成索引要减 1
+	// 第 4 个字节数减 1
+	releaseIP[3]-=1
+
+	for t := uint(4); t > 0; t-=1 {
+		// 与分配 IP 相反，释放 IP 获得索引的方式是 IP 地址的每一位相减之后分别左移将对应的数值加到索引上。
+		c += int(releaseIP[t-1] - subnet.IP[t-1]) << ((4-t) * 8)
+	}
+	// 将分配的位图数组中索引位置的值置为 0
+	ipalloc := []byte((*i.Subnets)[subnet.String()])
+	ipalloc[c] = '0'
+	(*i.Subnets)[subnet.String()] = string(ipalloc)
+
+	err = i.dump()
+	if err != nil {
+		log.Errorf("dump allocation info: %v", err)
+	}
+	return nil
 }
 
 // load 加载网段地址分配信息

@@ -50,6 +50,6 @@ func CreateNetwork(driver, name, subnet string)  {
 	// prefix length.
 	// For example, ParseCIDR("192.0.2.1/24") returns the IP address
 	// 192.0.2.1 and the network 192.0.2.0/24.
-	_, cidr, _ := net.ParseCIDR(subnet)
+	// _, cidr, _ := net.ParseCIDR(subnet)
 	// 通过 IPAM 分配的网关 IP，获取到网段中的第一个 IP 作为网关 IP
 }
