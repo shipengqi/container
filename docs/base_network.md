@@ -6,13 +6,116 @@ Linux 是通过网络设备去操作和使用网卡的，系统装了一个网�
 ## Veth
 Veth 是成对出现的虚拟网络设备，发送到 Veth 一端虚拟设备的请求会从另一端的虚拟设备中发出。在容器的虚拟化场景中，经常会使用 Veth 连接不同的网络 Namespace。
 
+```bash
+# 创建两个 network namespace
+[root@shcCDFrh75vm7 ~]# ip netns add ns1
+[root@shcCDFrh75vm7 ~]# ip netns add ns2
+# 创建一对 veth 设备
+[root@shcCDFrh75vm7 ~]# ip link add veth0 type veth peer name veth1
+# 将两个 veth 设备移动到两个 network namespace 中
+[root@shcCDFrh75vm7 ~]# ip link set veth0 netns ns1
+[root@shcCDFrh75vm7 ~]# ip link set veth1 netns ns2
+# 在 ns1 中查看网络设备
+[root@shcCDFrh75vm7 ~]# ip netns exec ns1 ip link
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+6: veth0@if5: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether fa:af:3d:87:de:6d brd ff:ff:ff:ff:ff:ff link-netnsid 1
+```
+
+除了 lo 设备，就只有一个网络设备 veth0。当请求发送到 veth0 这个虚拟网络设备时，都会原封不动地从另外一个网络 Namespace ns2 的网络接口 veth1 中
+出来。
+
+```bash
+# 配置每个 veth 设备的 ip 地址和 namespace 路由
+[root@shcCDFrh75vm7 ~]# ip netns exec ns1 ifconfig veth0 172.18.0.2/24 up
+[root@shcCDFrh75vm7 ~]# ip netns exec ns2 ifconfig veth1 172.18.0.3/24 up
+[root@shcCDFrh75vm7 ~]# ip netns exec ns1 route add default dev veth0
+[root@shcCDFrh75vm7 ~]# ip netns exec ns2 route add default dev veth1
+# 通过 veth 一端出去的包，另外一端能直接接收到
+[root@shcCDFrh75vm7 ~]# ip netns exec ns1 ping -c 3 172.18.0.3
+PING 172.18.0.3 (172.18.0.3) 56(84) bytes of data.
+64 bytes from 172.18.0.3: icmp_seq=1 ttl=64 time=0.114 ms
+64 bytes from 172.18.0.3: icmp_seq=2 ttl=64 time=0.112 ms
+64 bytes from 172.18.0.3: icmp_seq=3 ttl=64 time=0.083 ms
+
+--- 172.18.0.3 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2000ms
+rtt min/avg/max/mdev = 0.083/0.103/0.114/0.014 ms
+```
 
 ## Bridge
 Bridge 虚拟设备是用来桥接的网络设备，它相当于现实世界中的交换机，可以连接不同的网络设备，当请求到达 Bridge 设备时，可以通过报文中的 Mac 地址进行
 广播或转发。
 
+删除前面创建的 namespace：
+```bash
+[root@shcCDFrh75vm7 ~]# ip netns delete ns1
+[root@shcCDFrh75vm7 ~]# ip netns delete ns2
+```
+
+
+```bash
+# # 创建 1 个 network namespace
+[root@shcCDFrh75vm7 ~]# ip netns add ns1
+# 创建一对 veth 设备
+[root@shcCDFrh75vm7 ~]# ip link add veth0 type veth peer name veth1
+# 将 veth1 设备移动到 ns1 namespace 中
+[root@shcCDFrh75vm7 ~]# ip link set veth1 netns ns1
+# 创建网桥
+[root@shcCDFrh75vm7 ~]# brctl addbr br0
+# 挂载网络设备
+[root@shcCDFrh75vm7 ~]# brctl addif br0 eth0
+[root@shcCDFrh75vm7 ~]# brctl addif br0 veth0
+```
+
 ## Linux 路由表
 路由表是 Linux 内核的一个模块，通过定义路由表来决定在某个网络 Namespace 中包的流向，从而定义请求会到哪个网络设备上。
+
+**如果是使用 ssh 远程连接的虚机，下面的操作会导致断开连接**。
+
+```bash
+# 启动虚拟网络设备，并设置 veth1 的 ip 地址
+[root@shcCDFrh75vm7 ~]# ip link set veth0 up
+[root@shcCDFrh75vm7 ~]# ip link set br0 up
+[root@shcCDFrh75vm7 ~]# ip netns exec ns1 ifconfig veth1 172.18.0.2/24 up
+# 分别设置 ns1 网络中的路由和宿主机的路由
+# default 代表 0.0.0.0/0，即在 namespace 中所有流量都经过 veth1 流出
+[root@shcCDFrh75vm7 ~]# ip netns exec ns1 route add default dev veth1
+# 在宿主机上将 172.18.0.0/24 的网段请求路由到 br0 网桥
+[root@shcCDFrh75vm7 ~]# route add -net 172.18.0.0/24 dev br0
+# 查看宿主机 ip
+[root@shcCDFrh75vm7 ~]# ifconfig eth0
+ethO    Link encap:Ethernet HWaddr 08:00:27:0e:94:e9
+        inet addr: 10.0.2.15 Bcast:10.0.2.255 Mask:255.255.255.0
+        inet6 addr:fe80::a00:27ff:fe0e:94e9/64 Scope:Link
+        UP BROADCAST RUNNING MULTICAST MTU:1500 Metric:1
+        RX packets:4521 errors:O dropped:0 overruns:O frame:O
+        TX packets:1028 errors:O dropped:O overruns:O carrier:O
+        collisions:O txqueuelen:1OOO
+        RX bytes:4959937 (4.9 MB) TX bytes:70270 (70.2 KB)
+# 在 ns1 中访问宿主机地址
+[root@shcCDFrh75vm7 ~]# ip netns exec ns1 ping -c 3 10.0.2.15
+PING 10.0.2.15 (10.0.2.15) 56(84) bytes of data.
+64 bytes from 10.0.2.15: icmp_seq=1 ttl=64 time=0.114 ms
+64 bytes from 10.0.2.15: icmp_seq=2 ttl=64 time=0.112 ms
+64 bytes from 10.0.2.15: icmp_seq=3 ttl=64 time=0.083 ms
+
+--- 10.0.2.15 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2000ms
+rtt min/avg/max/mdev = 0.083/0.103/0.114/0.014 ms
+# 在宿主机访问 ns1 中的地址
+[root@shcCDFrh75vm7 ~]# ping -c 3 172.18.0.2
+[root@shcCDFrh75vm7 ~]# ip netns exec ns1 ping -c 3 10.0.2.15
+PING 172.18.0.2 (172.18.0.2) 56(84) bytes of data.
+64 bytes from 172.18.0.2: icmp_seq=1 ttl=64 time=0.114 ms
+64 bytes from 172.18.0.2: icmp_seq=2 ttl=64 time=0.112 ms
+64 bytes from 172.18.0.2: icmp_seq=3 ttl=64 time=0.083 ms
+
+--- 172.18.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2000ms
+rtt min/avg/max/mdev = 0.083/0.103/0.114/0.014 ms
+```
 
 ## Linux iptables
 iptables 是对 Linux 内核的 netfilter 模块进行操作的工具，用来管理网络包的流动和转发。

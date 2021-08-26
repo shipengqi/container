@@ -48,7 +48,7 @@ func (r *run) Name() string {
 func (r *run) Run() error {
 	log.Debugf("***** %s Run *****", strings.ToUpper(r.name))
 	containerId := containerId(10)
-	p, wp, err := container.NewParentProcess(r.options.TTY, r.options.Volume, containerId, r.imgName, r.options.Envs)
+	p, wp, err := container.NewInitProcess(r.options.TTY, r.options.Volume, containerId, r.imgName, r.options.Envs)
 	if err := p.Start(); err != nil {
 		log.Errort("parent run", zap.Error(err))
 		return err
