@@ -143,6 +143,11 @@ iptables -t nat -A PREROUTING -p tcp -m tcp --dport 80 -j DNAT --to-destination 
 
 这样就可以把宿主机上 80 端口的 TCP 请求转发到 Namespace 中的地址 `172.18.0.2:80`，从而实现外部的应用调用。
 
+
+在容器的 Net Namespace 中，就可以通过容器的 Veth 直接与挂载在同一个 Bridge 上的容器通信，以及通过 Bridge 上创建的 iptables 的
+MASQUERADE 规则访问外部网络，同时，外部也可以通过机器上的端口经过 iptables 的 DNAT 的转发访问容器内部。
+
+
 ### IPAM
 
 IPAM 也是网络功能中的一个组件，用于网络 IP 地址的分配和释放，包括容器的 IP 地址和网络网关的 IP 地址。

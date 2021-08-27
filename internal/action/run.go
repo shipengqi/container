@@ -3,6 +3,7 @@ package action
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/shipengqi/container/internal/network"
 	"math/rand"
 	"os"
 	"strconv"
@@ -83,6 +84,25 @@ func (r *run) Run() error {
 	if err != nil {
 		log.Errort("cgroup manager apply", zap.Error(err))
 		return err
+	}
+
+	if len(r.options.Network) > 0 {
+		// config container network
+		err = network.Init()
+		if err != nil {
+			log.Errort("network init", zap.Error(err))
+			return err
+		}
+		containerInfo := &container.Information{
+			Id:          containerId,
+			Pid:         strconv.Itoa(p.Process.Pid),
+			Name:        containerName,
+			PortMapping: r.options.Publish,
+		}
+		if err = network.Connect(r.options.Network, containerInfo); err != nil {
+			log.Errort("connect network", zap.Error(err))
+			return err
+		}
 	}
 	err = notifyInitProcess(r.cmdArgs, wp)
 	if err != nil {

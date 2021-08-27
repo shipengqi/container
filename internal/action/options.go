@@ -9,6 +9,8 @@ type RunActionOptions struct {
 	CpuShare    string
 	Volume      string
 	Name        string
+	Network     string
+	Publish     []string
 	Envs        []string
 }
 

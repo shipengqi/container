@@ -1,9 +1,11 @@
 package c
 
 import (
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/shipengqi/container/internal/action"
+	"github.com/shipengqi/container/internal/network"
 )
 
 func newNetworkSubCreateCmd() *cobra.Command {
@@ -12,6 +14,17 @@ func newNetworkSubCreateCmd() *cobra.Command {
 		Use:   "create [options]",
 		Short: "Create a network",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return errors.New("missing network name")
+			}
+			err := network.Init()
+			if err != nil {
+				return err
+			}
+			err = network.CreateNetwork(o.Driver, args[0], o.Subnet)
+			if err != nil {
+				return errors.Wrap(err, "create network")
+			}
 			return nil
 		},
 	}
