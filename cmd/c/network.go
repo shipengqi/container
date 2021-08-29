@@ -9,8 +9,7 @@ func newNetworkCmd() *cobra.Command {
 		Use:   "network [options]",
 		Short: "Manage networks",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cmd.Help()
-			return nil
+			return cmd.Help()
 		},
 	}
 	c.DisableFlagsInUseLine = true

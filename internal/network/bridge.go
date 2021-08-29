@@ -210,7 +210,7 @@ func setupIPTables(bridgeName string, subnet *net.IPNet) error {
 	// Go 语言没有直接操控 iptables 操作的库
 	// 例如 对 namespace 中发出的包添加网络地址转换。在 namespace 中请求宿主机外部地址时，将 namespace 中的源地址转换成宿主机的地址
 	// 作为源地址，就可以在 namespace 中访问宿主机外的网络了。
-	// iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -o ethO -j MASQUERADE
+	// iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -o testbridge -j MASQUERADE
 	iptablesCmd := fmt.Sprintf("-t nat -A POSTROUTING -s %s ! -o %s -j MASQUERADE", subnet.String(), bridgeName)
 	cmd := exec.Command("iptables", strings.Split(iptablesCmd, " ")...)
 	output, err := cmd.Output()

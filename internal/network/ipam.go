@@ -40,6 +40,7 @@ func (i *IPAM) Allocate(subnet *net.IPNet) (ip net.IP, err error) {
 	// net.IPNet.Mask.Size 返回网段的子网掩码的总长度和网段前面的固定位的长度
 	// 比如 127.0.0.0/8 网段的子网掩码是 255.0.0.0
 	// 那么 subnet.Mask.Size 返回值就是前面 255 所对应的位数和总位数，也就是 8 和 32
+	_, subnet, _ = net.ParseCIDR(subnet.String())
 	one, size := subnet.Mask.Size()
 	// 如果之前没有分配过这个网段，则初始化网段配置
 	if _, exist := (*i.Subnets)[subnet.String()]; !exist {
@@ -83,6 +84,7 @@ func (i *IPAM) Allocate(subnet *net.IPNet) (ip net.IP, err error) {
 
 func (i *IPAM) Release(subnet *net.IPNet, ipaddr *net.IP) error {
 	i.Subnets = &map[string]string{}
+	_, subnet, _ = net.ParseCIDR(subnet.String())
 	err := i.load()
 	if err != nil {
 		log.Errorf("load allocation info: %v", err)

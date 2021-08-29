@@ -3,10 +3,7 @@ package network
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/shipengqi/container/internal/container"
-	"github.com/shipengqi/container/pkg/log"
-	"github.com/vishvananda/netns"
+
 	"net"
 	"os"
 	"os/exec"
@@ -16,13 +13,18 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/pkg/errors"
 	"github.com/vishvananda/netlink"
+	"github.com/vishvananda/netns"
+
+	"github.com/shipengqi/container/internal/container"
+	"github.com/shipengqi/container/pkg/log"
 )
 
 const DefaultNetworkPath = "/var/run/q.container/network/network/"
 
 var (
-	drivers = map[string]Driver{}
+	drivers  = map[string]Driver{}
 	networks = map[string]*Network{}
 )
 
@@ -71,7 +73,7 @@ func (nw *Network) dump(dumpPath string) error {
 	}
 
 	nwPath := filepath.Join(dumpPath, nw.Name)
-	nwFile, err := os.OpenFile(nwPath, os.O_TRUNC | os.O_WRONLY | os.O_CREATE, 0644)
+	nwFile, err := os.OpenFile(nwPath, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
@@ -227,7 +229,6 @@ func CreateNetwork(driver, name, subnet string) error {
 	return nw.dump(DefaultNetworkPath)
 }
 
-
 func Connect(networkName string, cinfo *container.Information) error {
 	// 读取网络配置信息
 	network, ok := networks[networkName]
@@ -242,12 +243,12 @@ func Connect(networkName string, cinfo *container.Information) error {
 	if err != nil {
 		return errors.Wrap(err, "allocate ip")
 	}
-
+	log.Debugf("alloc ip: %s", ip)
 	// 创建网络端点
 	ep := &Endpoint{
-		ID: fmt.Sprintf("%s-%s", cinfo.Id, networkName),
-		IPAddress: ip,
-		Network: network,
+		ID:          fmt.Sprintf("%s-%s", cinfo.Id, networkName),
+		IPAddress:   ip,
+		Network:     network,
 		PortMapping: cinfo.PortMapping,
 	}
 
@@ -282,8 +283,8 @@ func configEndpointIpAddressAndRoute(ep *Endpoint, cinfo *container.Information)
 	defer enterContainerNetns(&peerLink, cinfo)()
 
 	// 获取到容器的 IP 地址及网段， 用于配置容器内部 Veth 端点配置
-	log.Debugf("ep ip: %s",  ep.IPAddress)
-	log.Debugf("ep ip range: %s",  *ep.Network.IpRange)
+	log.Debugf("ep ip: %s", ep.IPAddress)
+	log.Debugf("ep ip range: %s", *ep.Network.IpRange)
 	interfaceIP := *ep.Network.IpRange
 	interfaceIP.IP = ep.IPAddress
 
@@ -311,8 +312,8 @@ func configEndpointIpAddressAndRoute(ep *Endpoint, cinfo *container.Information)
 	// 相当于 ip netns exec ns1 route add 0.0.0.0/0 dev veth1
 	defaultRoute := &netlink.Route{
 		LinkIndex: peerLink.Attrs().Index,
-		Gw: ep.Network.IpRange.IP,
-		Dst: cidr,
+		Gw:        ep.Network.IpRange.IP,
+		Dst:       cidr,
 	}
 
 	// RouteAdd 添加路由到容器的网络空间
@@ -359,7 +360,7 @@ func enterContainerNetns(enLink *netlink.Link, cinfo *container.Information) fun
 	}
 	// 返回之前 Net Namespace 的函数
 	// 在容器的网络空间中，执行完容器配置之后调用此函数就可以将程序恢复到原生的N et Namespace
-	return func () {
+	return func() {
 		// 恢复到上面获取到的之前的 Net Namespace
 		_ = netns.Set(origns)
 		// 关闭 Namespace 文件
@@ -373,7 +374,7 @@ func enterContainerNetns(enLink *netlink.Link, cinfo *container.Information) fun
 
 func configPortMapping(ep *Endpoint, cinfo *container.Information) error {
 	for _, pm := range ep.PortMapping {
-		portMapping :=strings.Split(pm, ":")
+		portMapping := strings.Split(pm, ":")
 		if len(portMapping) != 2 {
 			log.Errorf("port mapping format error, %v", pm)
 			continue

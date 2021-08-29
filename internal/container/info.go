@@ -7,7 +7,7 @@ const (
 )
 
 var (
-	DefaultInfoLocation = "/var/run/q.container/%s/"
+	DefaultInfoLocation = "/var/run/q.container/containers/%s/"
 	ConfigName          = "config.json"
 	LogFileName         = "container.log"
 	RootUrl             = "/root"
