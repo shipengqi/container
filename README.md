@@ -11,14 +11,19 @@
 - https://github.com/huataihuang/cloud-atlas
 - https://cloud-atlas.readthedocs.io/zh_CN/latest/docker/index.html
 - https://xie.infoq.cn/article/11d413217d5186feed013122e
-
+- https://github.com/sevlyar/go-daemon
+- https://blog.csdn.net/kikajack/article/details/80457841
+- https://www.cnblogs.com/liyuanhong/p/13585654.html
 ## TODO
-- 文件的存放目录和结构（容器信息，image，network 等）
+- 文件的存放目录和结构（容器信息，image，network, log 等）
 - image storage driver
 - ipam bytes 实现
 - 项目目录重构
 - network bridge driver 接口
 - cgroups 重构
 - 日志 console 和 file 分离
-- 解决所有 bug
+- 解决所有 bug （$PATH，exit throw error, log command error etc.）
 - doc 重写（docs，readme）
+- https://github.com/sevlyar/go-daemon 实现 fork
+- default network bridge
+- clean container related resources
