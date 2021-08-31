@@ -7,7 +7,6 @@ package nsenter
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-// __attribute__((constructor)) 表示引用包之后会自动执行
 __attribute__((constructor)) void enter_namespace(void) {
 	char *container_pid;
 	container_pid = getenv("container_pid");
@@ -39,7 +38,6 @@ __attribute__((constructor)) void enter_namespace(void) {
 		}
 		close(fd);
 	}
-    // 执行指定的命令
 	int res = system(container_cmd);
 	exit(0);
 	return;
