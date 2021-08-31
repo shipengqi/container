@@ -15,7 +15,6 @@ type Interface interface {
 
 type action struct {
 	name    string
-	cmdArgs []string
 }
 
 func (a *action) Name() string {

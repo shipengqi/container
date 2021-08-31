@@ -79,7 +79,11 @@ func newRunCmd() *cobra.Command {
 //          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
 //          collisions:0 txqueuelen:1000
 //          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
-//
+// / # /bin/route
+// Kernel IP routing table
+// Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+// default         192.168.99.1    0.0.0.0         UG    0      0        0 cif-07903
+// 192.168.99.0    *               255.255.255.0   U     0      0        0 cif-07903
 // / #
 // 可以看到这个容器有两个网卡设备，IP 地址是 192.168.99.2
 // 启动另一个容器，并在另外一个容器中连接这个容器
@@ -169,8 +173,6 @@ func newRunCmd() *cobra.Command {
 // 2021-08-29T10:23:06.037+0800	DEBUG	pwd: /root/mnt/4674326516
 // 2021-08-29T10:23:06.048+0800	DEBUG	find cmd path: /bin/sh
 // 2021-08-29T10:23:06.048+0800	DEBUG	syscall.Exec cmd path: /bin/sh
-// / # /bin/nc lp 80
-// nc: bad address 'lp'
 // / # /bin/nc -lp 80
 // hello
 // [root@SGDLITVM0905 ~]# telnet shcCDFrh75vm7.hpeswlab.net 80

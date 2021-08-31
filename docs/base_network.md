@@ -190,3 +190,88 @@ IPAM，通过将 IP 地址分配信息的位图存放在文件中，实现了容
 #### 路由
 另一种实现跨主机容器网络通信的方式是路由，这种方式的原理是让宿主机的网络“知道”容器的地址要怎么路由、路由到哪台机器上，这种方式一般需要网络设备的支持，比如修
 改路由器的路由表，将容器 IP 地址的下一跳修改到这个容器所在的宿主机上，来送达跨主机容器间的请求。
+
+
+容器退出后必须清理 iptables 规则，否则会导致冲突
+network 删除后必须清理 iptables 规则和路由表
+```bash
+[root@shcCDFrh75vm7 container]# iptables -L PREROUTING -t nat --line-number
+Chain PREROUTING (policy ACCEPT)
+num  target     prot opt source               destination
+1    PREROUTING_direct  all  --  anywhere             anywhere
+2    PREROUTING_ZONES_SOURCE  all  --  anywhere             anywhere
+3    PREROUTING_ZONES  all  --  anywhere             anywhere
+4    DNAT       tcp  --  anywhere             anywhere             tcp dpt:http to:192.168.99.6:80
+5    DNAT       tcp  --  anywhere             anywhere             tcp dpt:http to:192.168.99.4:80
+6    DNAT       tcp  --  anywhere             anywhere             tcp dpt:http to:192.168.99.5:80
+7    DNAT       tcp  --  anywhere             anywhere             tcp dpt:http to:192.168.99.6:80
+8    DNAT       tcp  --  anywhere             anywhere             tcp dpt:http to:192.168.99.7:80
+[root@shcCDFrh75vm7 container]# iptables -D PREROUTING -t nat 8
+Bad argument `8'
+Try `iptables -h' or 'iptables --help' for more information.
+[root@shcCDFrh75vm7 container]# iptables -t nat -D PREROUTING 8
+[root@shcCDFrh75vm7 container]# iptables -L PREROUTING -t nat --line-number
+Chain PREROUTING (policy ACCEPT)
+num  target     prot opt source               destination
+1    PREROUTING_direct  all  --  anywhere             anywhere
+2    PREROUTING_ZONES_SOURCE  all  --  anywhere             anywhere
+3    PREROUTING_ZONES  all  --  anywhere             anywhere
+4    DNAT       tcp  --  anywhere             anywhere             tcp dpt:http to:192.168.99.6:80
+5    DNAT       tcp  --  anywhere             anywhere             tcp dpt:http to:192.168.99.4:80
+6    DNAT       tcp  --  anywhere             anywhere             tcp dpt:http to:192.168.99.5:80
+7    DNAT       tcp  --  anywhere             anywhere             tcp dpt:http to:192.168.99.6:80
+[root@shcCDFrh75vm7 container]# iptables -t nat -D PREROUTING 7
+[root@shcCDFrh75vm7 container]# iptables -t nat -D PREROUTING 6
+[root@shcCDFrh75vm7 container]# iptables -t nat -D PREROUTING 5
+[root@shcCDFrh75vm7 container]# iptables -t nat -D PREROUTING 4
+[root@shcCDFrh75vm7 container]# iptables -L PREROUTING -t nat --line-number
+Chain PREROUTING (policy ACCEPT)
+num  target     prot opt source               destination
+1    PREROUTING_direct  all  --  anywhere             anywhere
+2    PREROUTING_ZONES_SOURCE  all  --  anywhere             anywhere
+3    PREROUTING_ZONES  all  --  anywhere             anywhere
+[root@shcCDFrh75vm7 container]# iptables -L  POSTROUTING -t nat --line-number
+Chain POSTROUTING (policy ACCEPT)
+num  target     prot opt source               destination
+1    RETURN     all  --  192.168.122.0/24     base-address.mcast.net/24
+2    RETURN     all  --  192.168.122.0/24     255.255.255.255
+3    MASQUERADE  tcp  --  192.168.122.0/24    !192.168.122.0/24     masq ports: 1024-65535
+4    MASQUERADE  udp  --  192.168.122.0/24    !192.168.122.0/24     masq ports: 1024-65535
+5    MASQUERADE  all  --  192.168.122.0/24    !192.168.122.0/24
+6    POSTROUTING_direct  all  --  anywhere             anywhere
+7    POSTROUTING_ZONES_SOURCE  all  --  anywhere             anywhere
+8    POSTROUTING_ZONES  all  --  anywhere             anywhere
+9    MASQUERADE  all  --  192.168.99.0/24      anywhere
+10   MASQUERADE  all  --  192.168.99.0/24      anywhere
+11   MASQUERADE  all  --  192.168.99.0/24      anywhere
+12   MASQUERADE  all  --  192.168.99.0/24      anywhere
+13   MASQUERADE  all  --  192.168.99.0/24      anywhere
+14   MASQUERADE  all  --  192.168.99.0/24      anywhere
+15   MASQUERADE  all  --  192.168.99.0/24      anywhere
+16   MASQUERADE  all  --  192.168.99.0/24      anywhere
+17   MASQUERADE  all  --  192.168.99.0/24      anywhere
+[root@shcCDFrh75vm7 container]# iptables -t nat -D POSTROUTING 17
+[root@shcCDFrh75vm7 container]# iptables -t nat -D POSTROUTING 16 15
+Bad argument `15'
+Try `iptables -h' or 'iptables --help' for more information.
+[root@shcCDFrh75vm7 container]# iptables -t nat -D POSTROUTING 16
+[root@shcCDFrh75vm7 container]# iptables -t nat -D POSTROUTING 15
+[root@shcCDFrh75vm7 container]# iptables -t nat -D POSTROUTING 14
+[root@shcCDFrh75vm7 container]# iptables -t nat -D POSTROUTING 13
+[root@shcCDFrh75vm7 container]# iptables -t nat -D POSTROUTING 12
+[root@shcCDFrh75vm7 container]# iptables -t nat -D POSTROUTING 11
+[root@shcCDFrh75vm7 container]# iptables -t nat -D POSTROUTING 10
+[root@shcCDFrh75vm7 container]# iptables -L  POSTROUTING -t nat --line-number
+Chain POSTROUTING (policy ACCEPT)
+num  target     prot opt source               destination
+1    RETURN     all  --  192.168.122.0/24     base-address.mcast.net/24
+2    RETURN     all  --  192.168.122.0/24     255.255.255.255
+3    MASQUERADE  tcp  --  192.168.122.0/24    !192.168.122.0/24     masq ports: 1024-65535
+4    MASQUERADE  udp  --  192.168.122.0/24    !192.168.122.0/24     masq ports: 1024-65535
+5    MASQUERADE  all  --  192.168.122.0/24    !192.168.122.0/24
+6    POSTROUTING_direct  all  --  anywhere             anywhere
+7    POSTROUTING_ZONES_SOURCE  all  --  anywhere             anywhere
+8    POSTROUTING_ZONES  all  --  anywhere             anywhere
+9    MASQUERADE  all  --  192.168.99.0/24      anywhere
+
+```

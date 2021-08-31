@@ -17,6 +17,7 @@
 - https://github.com/opencontainers/runc
 - https://github.com/coreos/go-iptables
 - https://github.com/containernetworking/plugins
+
 ## TODO
 - 文件的存放目录和结构（容器信息，image，network, log 等）
 - image storage driver
@@ -25,8 +26,26 @@
 - network bridge driver 接口
 - cgroups 重构
 - 日志 console 和 file 分离
-- 解决所有 bug （$PATH，exit throw error, log command error etc.）
+- error definition
+- 解决所有 bug （$PATH，exit throw error, log command error, --cpu error etc.）
 - doc 重写（docs，readme）
 - https://github.com/sevlyar/go-daemon 实现 fork
 - default network bridge
 - clean container related resources
+- path.Join and fmt.Sprintf or string + string
+- clean iptables rules and route tables
+
+## Know issues
+exit throw error
+```bash
+2021-08-31T12:16:39.147+0800    ERROR   parent wait     {"error": "exit status 130"}
+2021-08-31T12:16:39.151+0800    WARN    remove cgroup fail unlinkat /sys/fs/cgroup/cpuset/q.container.cgroup/cpuset.memory_spread_slab: operation not permitted
+2021-08-31T12:16:39.152+0800    WARN    remove cgroup fail unlinkat /sys/fs/cgroup/memory/q.container.cgroup/memory.kmem.tcp.max_usage_in_bytes: operation not permitted
+2021-08-31T12:16:39.152+0800    WARN    remove cgroup fail unlinkat /sys/fs/cgroup/cpu,cpuacct/q.container.cgroup/cpu.rt_period_us: operation not permitted
+2021-08-31T12:16:39.152+0800    ERROR   container.Execute(): exit status 130
+
+
+2021-08-31T12:19:29.694+0800    ERROR   parent wait     {"error": "exit status 130"}
+2021-08-31T12:19:29.703+0800    ERROR   container.Execute(): exit status 130
+```
+

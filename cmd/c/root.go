@@ -61,7 +61,6 @@ func New() *cobra.Command {
 	c := &cobra.Command{
 		Use:     baseName + " [options]",
 		Short:   rootDesc,
-		Example: buf.String(),
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {},
 		PreRun: func(cmd *cobra.Command, args []string) {},
 		RunE: func(cmd *cobra.Command, args []string) error {

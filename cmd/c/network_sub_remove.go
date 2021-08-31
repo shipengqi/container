@@ -4,7 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/shipengqi/container/internal/network"
+	"github.com/shipengqi/container/internal/action"
 )
 
 
@@ -16,15 +16,8 @@ func newNetworkSubRemoveCmd() *cobra.Command {
 			if len(args) < 1 {
 				return errors.New("missing network name")
 			}
-			err := network.Init()
-			if err != nil {
-				return err
-			}
-			err = network.DeleteNetwork(args[0])
-			if err != nil {
-				return errors.Wrap(err, "remove network")
-			}
-			return nil
+			a := action.NewNetworkRemoveAction(args[0])
+			return action.Execute(a)
 		},
 	}
 	c.DisableFlagsInUseLine = true

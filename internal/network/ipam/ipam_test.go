@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+var defaultAllocator = New("/var/run/q.container/network/ipam/subnet.json")
+
 func TestIPAM_Allocate(t *testing.T) {
 	_, ipnet, _ := net.ParseCIDR("192.168.0.1/24")
 	ip, _ := defaultAllocator.Allocate(ipnet)

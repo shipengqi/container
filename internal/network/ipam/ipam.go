@@ -1,27 +1,31 @@
 package ipam
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
+
 	"github.com/shipengqi/container/pkg/log"
 	"github.com/shipengqi/container/pkg/utils"
 )
 
-const DefaultAllocatorPath = "/var/run/q.container/network/ipam/subnet.json"
-
-var defaultAllocator = &IPAM{
-	SubnetAllocatorPath: DefaultAllocatorPath,
-}
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // IPAM IP Address Management
 type IPAM struct {
 	SubnetAllocatorPath string
 	Subnets             *map[string]*BitMap
+}
+
+// New create a new IPAM
+func New(allocatorPath string) *IPAM {
+	return &IPAM{
+		SubnetAllocatorPath: allocatorPath,
+	}
 }
 
 // Allocate an available ip address of a subnet
@@ -58,6 +62,7 @@ func (i *IPAM) Allocate(subnet *net.IPNet) (ip net.IP, err error) {
 	return
 }
 
+// Release an assigned ip address of a subnet
 func (i *IPAM) Release(subnet *net.IPNet, ipaddr *net.IP) error {
 	i.Subnets = &map[string]*BitMap{}
 	_, subnet, _ = net.ParseCIDR(subnet.String())
@@ -89,7 +94,7 @@ func (i *IPAM) Release(subnet *net.IPNet, ipaddr *net.IP) error {
 	return nil
 }
 
-// load 加载网段地址分配信息
+// load assigned ip address
 func (i *IPAM) load() error {
 	if utils.IsNotExist(i.SubnetAllocatorPath) {
 		return nil
@@ -108,10 +113,10 @@ func (i *IPAM) load() error {
 	return nil
 }
 
+// dump assigned ip address
 func (i *IPAM) dump() error {
-	// 分隔目录和文件
+	// splits path immediately following the final Separator
 	dir, _ := filepath.Split(i.SubnetAllocatorPath)
-	// 不存在，则创建
 	if utils.IsNotExist(dir) {
 		err := os.MkdirAll(dir, 0644)
 		if err != nil {
@@ -119,7 +124,7 @@ func (i *IPAM) dump() error {
 		}
 	}
 
-	// os.O_TRUNC 如果存在则清空
+	// os.O_TRUNC truncate regular writable file when opened.
 	f, err := os.OpenFile(i.SubnetAllocatorPath, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err

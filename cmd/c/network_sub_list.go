@@ -3,7 +3,7 @@ package c
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/shipengqi/container/internal/network"
+	"github.com/shipengqi/container/internal/action"
 )
 
 
@@ -12,12 +12,8 @@ func newNetworkSubListCmd() *cobra.Command {
 		Use:     "ls [options]",
 		Short:   "List networks",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := network.Init()
-			if err != nil {
-				return err
-			}
-			network.ListNetwork()
-			return nil
+			a := action.NewNetworkListAction()
+			return action.Execute(a)
 		},
 	}
 	c.DisableFlagsInUseLine = true

@@ -3,7 +3,6 @@ package action
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/shipengqi/container/internal/network"
 	"math/rand"
 	"os"
 	"strconv"
@@ -17,12 +16,28 @@ import (
 	"github.com/shipengqi/container/internal/cgroups/manager"
 	"github.com/shipengqi/container/internal/cgroups/subsystems"
 	"github.com/shipengqi/container/internal/container"
+	"github.com/shipengqi/container/internal/network"
 	"github.com/shipengqi/container/pkg/log"
 )
 
-type run struct {
+type RunActionOptions struct {
+	Interactive bool
+	TTY         bool
+	Detach      bool
+	CpuSet      string
+	MemoryLimit string
+	CpuShare    string
+	Volume      string
+	Name        string
+	Network     string
+	Publish     []string
+	Envs        []string
+}
+
+type runA struct {
 	*action
 
+	cmdArgs []string
 	imgName string
 	options *RunActionOptions
 }
@@ -32,31 +47,27 @@ func NewRunAction(args []string, options *RunActionOptions) Interface {
 	cmdArgs := args[1:]
 	log.Infof("image name: %s", imageName)
 	log.Infof("command: %v", cmdArgs)
-	return &run{
+	return &runA{
 		action: &action{
-			name:    "run",
-			cmdArgs: cmdArgs,
+			name: "run",
 		},
+		cmdArgs: cmdArgs,
 		imgName: imageName,
 		options: options,
 	}
 }
 
-func (r *run) Name() string {
-	return r.name
-}
-
-func (r *run) Run() error {
-	log.Debugf("***** %s Run *****", strings.ToUpper(r.name))
+func (a *runA) Run() error {
+	log.Debugf("***** %s Run *****", strings.ToUpper(a.name))
 	containerId := containerId(10)
-	p, wp, err := container.NewInitProcess(r.options.TTY, r.options.Volume, containerId, r.imgName, r.options.Envs)
+	p, wp, err := container.NewInitProcess(a.options.TTY, a.options.Volume, containerId, a.imgName, a.options.Envs)
 	if err := p.Start(); err != nil {
 		log.Errort("parent run", zap.Error(err))
 		return err
 	}
 
 	// save container info
-	containerName, err := saveContainerInfo(p.Process.Pid, r.cmdArgs, r.options.Name, containerId)
+	containerName, err := saveContainerInfo(p.Process.Pid, a.cmdArgs, a.options.Name, containerId)
 	if err != nil {
 		log.Errorf("save container info error %v", err)
 		return err
@@ -70,9 +81,9 @@ func (r *run) Run() error {
 	defer cgroupManager.Destroy()
 	// set resource limitations
 	res := &subsystems.Resources{
-		MemoryLimit: r.options.MemoryLimit,
-		CpuSet:      r.options.CpuSet,
-		CpuShare:    r.options.CpuShare,
+		MemoryLimit: a.options.MemoryLimit,
+		CpuSet:      a.options.CpuSet,
+		CpuShare:    a.options.CpuShare,
 	}
 	err = cgroupManager.Set(res)
 	if err != nil {
@@ -86,7 +97,7 @@ func (r *run) Run() error {
 		return err
 	}
 
-	if len(r.options.Network) > 0 {
+	if len(a.options.Network) > 0 {
 		// config container network
 		err = network.Init()
 		if err != nil {
@@ -97,24 +108,24 @@ func (r *run) Run() error {
 			Id:          containerId,
 			Pid:         strconv.Itoa(p.Process.Pid),
 			Name:        containerName,
-			PortMapping: r.options.Publish,
+			PortMapping: a.options.Publish,
 		}
-		if err = network.Connect(r.options.Network, containerInfo); err != nil {
+		if err = network.Connect(a.options.Network, containerInfo); err != nil {
 			log.Errort("connect network", zap.Error(err))
 			return err
 		}
 	}
-	err = notifyInitProcess(r.cmdArgs, wp)
+	err = notifyInitProcess(a.cmdArgs, wp)
 	if err != nil {
 		log.Errort("notify", zap.Error(err))
 		return err
 	}
-	log.Infof("tty %v", r.options.TTY)
-	if r.options.TTY {
+	log.Infof("tty %v", a.options.TTY)
+	if a.options.TTY {
 		err = p.Wait()
 		// tty 方式创建的容器，在容器退出后，需要删除容器的相关信息
 		deleteContainerInfo(containerId)
-		container.DeleteWorkSpace(r.options.Volume, containerId)
+		container.DeleteWorkSpace(a.options.Volume, containerId)
 		if err != nil {
 			log.Errort("parent wait", zap.Error(err))
 			return err
@@ -123,8 +134,8 @@ func (r *run) Run() error {
 	return nil
 }
 
-func (r *run) PreRun() error {
-	if r.options.TTY && r.options.Detach {
+func (a *runA) PreRun() error {
+	if a.options.TTY && a.options.Detach {
 		return errors.New("--tty and --detach flags cannot both provided")
 	}
 	return nil
