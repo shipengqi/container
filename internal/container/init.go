@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/shipengqi/container/pkg/log"
-	"go.uber.org/zap"
 )
 
 /*
@@ -29,8 +28,7 @@ syscall.Exec 底层调用了 int execve(const char *filename, char *const argv[]
 func InitProcess() error {
 	cmdArgs, err := readParentPipe()
 	if err != nil {
-		log.Errorf("read parent pipe: %s", err)
-		return err
+		return errors.Wrap(err, "read parent pipe")
 	}
 	if len(cmdArgs) < 1 {
 		return errors.New("user command not found")
@@ -45,16 +43,14 @@ func InitProcess() error {
 	log.Debugf("find cmd path: %s", cmdArgs[0])
 	cmdPath, err := exec.LookPath(cmdArgs[0])
 	if err != nil {
-		log.Errort("exec.LookPath", zap.Error(err))
-		return err
+		return errors.Wrap(err, "exec.LookPath")
 	}
 
 	log.Debugf("syscall.Exec cmd path: %s", cmdPath)
 	err = syscall.Exec(cmdPath, cmdArgs[0:], os.Environ())
 
 	if err != nil {
-		log.Errort("syscall.Exec", zap.Error(err))
-		return err
+		return errors.Wrap(err, "syscall.Exec")
 	}
 	return nil
 }
@@ -64,8 +60,7 @@ func readParentPipe() ([]string, error) {
 	pipe := os.NewFile(uintptr(3), "pipe")
 	msg, err := ioutil.ReadAll(pipe)
 	if err != nil {
-		log.Errorf("read pipe: %v", err)
-		return nil, err
+		return nil, errors.Wrap(err, "read pipe")
 	}
 	return strings.Split(string(msg), " "), nil
 }

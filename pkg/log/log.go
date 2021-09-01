@@ -308,7 +308,6 @@ func newZapLogger(config Config) (*Logger, error) {
 	fileEncoder := zapcore.NewJSONEncoder(jsonEncCfg)
 
 	if err := os.MkdirAll(config.Directory, 0744); err != nil {
-		Error("can't create log directory", zap.Error(err), zap.String("path", config.Directory))
 		return nil, err
 	}
 

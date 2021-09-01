@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"syscall"
 
+	"github.com/pkg/errors"
 	"github.com/shipengqi/container/pkg/log"
 	"github.com/shipengqi/container/pkg/utils"
 )
@@ -38,15 +39,13 @@ func NewInitProcess(tty bool, volume, containerId, imgName string, envs []string
 		dirURL := fmt.Sprintf(DefaultInfoLocation, containerId)
 		if utils.IsNotExist(dirURL) {
 			if err := os.MkdirAll(dirURL, 0622); err != nil {
-				log.Errorf("NewInitProcess mkdir %s error %v", dirURL, err)
-				return nil, nil, err
+				return nil, nil, errors.Errorf("mkdir: %s, %v", dirURL, err)
 			}
 		}
 		stdLogFilePath := dirURL + LogFileName
 		stdLogFile, err := os.Create(stdLogFilePath)
 		if err != nil {
-			log.Errorf("NewInitProcess create file %s error %v", stdLogFilePath, err)
-			return nil, nil, err
+			return nil, nil, errors.Errorf("create: %s, %v", stdLogFilePath, err)
 		}
 		cmd.Stdout = stdLogFile
 	}
@@ -61,8 +60,7 @@ func NewInitProcess(tty bool, volume, containerId, imgName string, envs []string
 	cmd.Env = append(os.Environ(), envs...)
 	mntUrl, err := NewWorkSpace(volume, imgName, containerId)
 	if err != nil {
-		log.Errorf("workspace: %v", err)
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err, "new workspace")
 	}
 	cmd.Dir = mntUrl
 	return cmd, wp, nil

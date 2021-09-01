@@ -1,14 +1,13 @@
 package container
 
 import (
-	"github.com/shipengqi/container/pkg/log"
-	"github.com/shipengqi/container/pkg/utils"
-	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"syscall"
 
 	"github.com/pkg/errors"
+	"github.com/shipengqi/container/pkg/log"
+	"github.com/shipengqi/container/pkg/utils"
 )
 
 func pivotRoot(root string) error {
@@ -17,7 +16,7 @@ func pivotRoot(root string) error {
 	  bind mount 是把相同的内容换了一个挂载点的挂载方法
 	*/
 	if err := syscall.Mount(root, root, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
-		return errors.Errorf("mount rootfs to itself: %v", err)
+		return errors.Wrap(err, "mount rootfs to itself")
 	}
 	// 创建 rootfs/.pivot_root 用来存储 old_root
 	pivotDir := filepath.Join(root, ".pivot_root")
@@ -30,22 +29,22 @@ func pivotRoot(root string) error {
 	// https://github.com/xianlubird/mydocker/issues/62
 	// pivot_root: invalid argument
 	if err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
-		return errors.Errorf("mount /: %v", err)
+		return errors.Wrap(err, "mount /")
 	}
 
 	// pivot_root 到新的 rootfs, 现在老的 old_root 是挂载在 rootfs/.pivot_root
 	// 挂载点现在依然可以在 mount 命令中看到
 	if err := syscall.PivotRoot(root, pivotDir); err != nil {
-		return errors.Errorf("syscall.PivotRoot: %v", err)
+		return errors.Wrap(err, "syscall.PivotRoot")
 	}
 	// 修改当前的工作目录到根目录
 	if err := syscall.Chdir("/"); err != nil {
-		return errors.Errorf("syscall.Chdir: %v", err)
+		return errors.Wrap(err, "syscall.Chdir")
 	}
 	pivotDir = filepath.Join("/", ".pivot_root")
 	// umount rootfs/.pivot_root
 	if err := syscall.Unmount(pivotDir, syscall.MNT_DETACH); err != nil {
-		return errors.Errorf("unmount pivot_root: %v", err)
+		return errors.Wrap(err, "unmount pivot_root")
 	}
 	// 删除临时文件夹
 	return os.Remove(pivotDir)
@@ -55,7 +54,7 @@ func setUpMount() error {
 	// 获取当前路径
 	pwd, err := os.Getwd()
 	if err != nil {
-		return errors.Errorf("pwd: %v", err)
+		return errors.Wrap(err, "os.Getwd")
 	}
 	log.Debugf("pwd: %s", pwd)
 	err = pivotRoot(pwd)
@@ -67,16 +66,14 @@ func setUpMount() error {
 	mflags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
 	err = syscall.Mount("proc", "/proc", "proc", uintptr(mflags), "")
 	if err != nil {
-		log.Errort("mount proc", zap.Error(err))
-		return err
+		return errors.Wrap(err, "mount proc")
 	}
 
 	// tmpfs 是一种基于内存的文件系统，可以使用 RAM 或 swap 分区来存储。
 	err = syscall.Mount("tmpfs", "/dev", "tmpfs",
 		syscall.MS_NOSUID | syscall.MS_STRICTATIME, "mode=755")
 	if err != nil {
-		log.Errort("mount tmpfs", zap.Error(err))
-		return err
+		return errors.Wrap(err, "mount tmpfs")
 	}
 
 	return nil
