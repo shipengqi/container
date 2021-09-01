@@ -33,6 +33,7 @@
 - unit test
 - iptables pkg create chain and add comments with containerid
 - mkdir all dirs in hook function
+- recover panic
 
 ## Know issues
 - log command error

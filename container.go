@@ -24,7 +24,7 @@ func main() {
 
 	err := cmd.Execute()
 	if err != nil {
-		log.Errorf("%s.Execute(): %v", cmd.Name(), err)
+		log.Errorf("%s.Execute: %v", cmd.Name(), err)
 		os.Exit(1)
 	}
 	os.Exit(0)
