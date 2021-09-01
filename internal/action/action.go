@@ -3,8 +3,12 @@ package action
 import (
 	"strings"
 
+	jsoniter "github.com/json-iterator/go"
+
 	"github.com/shipengqi/container/pkg/log"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Interface interface {
 	Name() string

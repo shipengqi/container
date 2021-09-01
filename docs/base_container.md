@@ -9,3 +9,54 @@
 为了避免孤儿进程退出时无法释放所占用的资源而僵死，进程号为 1 的 init 进程就会接受这些孤儿进程。这就是父进程退出而容器进程依然运行的原理。
 虽然容器刚开始是由当前运行的 `./container` 进程创建的，但是当 `./container` 进程退出后，容器进程就会被进程号为 1 的 init 进程接管，这
 时容器进程还是运行着的，这样就实现了 `./container` 退出、容器不岩掉的功能。
+
+## `logs` 命令实现
+
+```go
+cmd := exec.Command("/proc/self/exe", "init")
+cmd.SysProcAttr = &syscall.SysProcAttr{
+    Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS |
+        syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC,
+}
+if tty {
+    cmd.Stdin = os.Stdin
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+} else {
+    // 将容器进程的标准输出挂载到 /var/run/q.container/<containerId>/container.log 文件中
+    dirURL := fmt.Sprintf(DefaultInfoLocation, containerId)
+    if utils.IsNotExist(dirURL) {
+        if err := os.MkdirAll(dirURL, 0622); err != nil {
+            log.Errorf("NewInitProcess mkdir %s error %v", dirURL, err)
+            return nil, nil, err
+        }
+    }
+    stdLogFilePath := dirURL + LogFileName
+    stdLogFile, err := os.Create(stdLogFilePath)
+    if err != nil {
+        log.Errorf("NewInitProcess create file %s error %v", stdLogFilePath, err)
+        return nil, nil, err
+    }
+    cmd.Stdout = stdLogFile
+}
+```
+
+`logs` 命令输出 `/var/run/q.container/<containerId>/container.log` 文件的内容：
+
+```go
+func (a *logA) Run() error {
+	dirURL := fmt.Sprintf(container.DefaultInfoLocation, a.containerId)
+	logFileLocation := dirURL + container.LogFileName
+	file, err := os.Open(logFileLocation)
+	defer file.Close()
+	if err != nil {
+		return errors.Errorf("open: %s, %v", logFileLocation, err)
+	}
+	content, err := ioutil.ReadAll(file)
+	if err != nil {
+		return errors.Errorf("read: %s, %v", logFileLocation, err)
+	}
+	_, _ = fmt.Fprint(os.Stdout, string(content))
+	return nil
+}
+```

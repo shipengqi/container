@@ -92,6 +92,7 @@ func (b *bridged) Delete(network string) error {
 	if err != nil {
 		return err
 	}
+	// `ip link del $link`
 	return netlink.LinkDel(br)
 }
 

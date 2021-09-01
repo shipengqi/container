@@ -275,3 +275,53 @@ num  target     prot opt source               destination
 9    MASQUERADE  all  --  192.168.99.0/24      anywhere
 
 ```
+
+```bash
+[root@shcCDFrh75vm7 container]# ./container network create --driver bridge --subnet 192.168.99.0/24 testbridge
+2021-09-01T17:17:47.235+0800    DEBUG   ***** [NETWORK-CREATE] PreRun *****
+2021-09-01T17:17:47.238+0800    DEBUG   subnet: 192.168.99.1/24
+2021-09-01T17:17:47.245+0800    DEBUG   ***** [NETWORK-CREATE] PostRun *****
+[root@shcCDFrh75vm7 container]# ./container run -it -m 100m --cpus 1 --network testbridge  busybox /bin/sh
+2021-09-01T17:18:14.110+0800    INFO    image name: busybox
+2021-09-01T17:18:14.110+0800    INFO    command: [/bin/sh]
+2021-09-01T17:18:14.110+0800    DEBUG   ***** RUN Run *****
+2021-09-01T17:18:14.163+0800    DEBUG   container id: 7196002797, name: 7196002797
+2021-09-01T17:18:14.168+0800    DEBUG   load network: /var/run/q.container/network/network/testbridge
+2021-09-01T17:18:14.168+0800    DEBUG   &{testbridge bridge 192.168.99.1/24}
+2021-09-01T17:18:14.168+0800    DEBUG   ip: 192.168.99.1
+2021-09-01T17:18:14.168+0800    DEBUG   mask: ffffff00
+2021-09-01T17:18:14.169+0800    DEBUG   alloc ip: 192.168.99.12
+2021-09-01T17:18:14.173+0800    INFO    initializing
+2021-09-01T17:18:14.207+0800    DEBUG   ep ip: 192.168.99.12
+2021-09-01T17:18:14.207+0800    DEBUG   ep ip range: {192.168.99.1 ffffff00}
+2021-09-01T17:18:14.208+0800    INFO    send cmd: /bin/sh
+2021-09-01T17:18:14.208+0800    INFO    send cmd: /bin/sh success
+2021-09-01T17:18:14.208+0800    INFO    tty true
+2021-09-01T17:18:14.208+0800    DEBUG   setting mount
+2021-09-01T17:18:14.208+0800    DEBUG   pwd: /root/mnt/7196002797
+2021-09-01T17:18:14.225+0800    DEBUG   find cmd path: /bin/sh
+2021-09-01T17:18:14.225+0800    DEBUG   syscall.Exec cmd path: /bin/sh
+/ # /bin/ip link show
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+62: cif-71960@if63: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue qlen 1000
+    link/ether f2:ba:9c:0a:3c:84 brd ff:ff:ff:ff:ff:ff
+/ #
+
+```
+
+打开一个新的 terminal，可以看到 `cif-71960@if63` 在宿主机上 `testbridge` 网桥上的另一端 `71960@if62`：
+```bash
+[root@shcCDFrh75vm7 container]# ip link show
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: ens32: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+    link/ether 00:50:56:b0:31:14 brd ff:ff:ff:ff:ff:ff
+4: virbr0-nic: <BROADCAST,MULTICAST> mtu 1500 qdisc pfifo_fast state DOWN mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:b3:a0:49 brd ff:ff:ff:ff:ff:ff
+61: testbridge: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether 4e:52:21:65:45:a1 brd ff:ff:ff:ff:ff:ff
+63: 71960@if62: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master testbridge state UP mode DEFAULT group default qlen 1000
+    link/ether 4e:52:21:65:45:a1 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+
+```

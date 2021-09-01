@@ -1,7 +1,6 @@
 package action
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -10,14 +9,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/shipengqi/container/pkg/utils"
-	"go.uber.org/zap"
 
 	"github.com/shipengqi/container/internal/cgroups/manager"
 	"github.com/shipengqi/container/internal/cgroups/subsystems"
 	"github.com/shipengqi/container/internal/container"
 	"github.com/shipengqi/container/internal/network"
 	"github.com/shipengqi/container/pkg/log"
+	"github.com/shipengqi/container/pkg/utils"
 )
 
 type RunActionOptions struct {
@@ -59,18 +57,16 @@ func NewRunAction(args []string, options *RunActionOptions) Interface {
 
 func (a *runA) Run() error {
 	log.Debugf("***** %s Run *****", strings.ToUpper(a.name))
-	containerId := containerId(10)
+	containerId := ToContainerId(10)
 	p, wp, err := container.NewInitProcess(a.options.TTY, a.options.Volume, containerId, a.imgName, a.options.Envs)
 	if err := p.Start(); err != nil {
-		log.Errort("parent run", zap.Error(err))
-		return err
+		return errors.Wrap(err, "init run")
 	}
 
 	// save container info
 	containerName, err := saveContainerInfo(p.Process.Pid, a.cmdArgs, a.options.Name, containerId)
 	if err != nil {
-		log.Errorf("save container info error %v", err)
-		return err
+		return errors.Wrap(err, "save container info")
 	}
 
 	log.Debugf("container id: %s, name: %s", containerId, containerName)
@@ -87,22 +83,19 @@ func (a *runA) Run() error {
 	}
 	err = cgroupManager.Set(res)
 	if err != nil {
-		log.Errort("cgroup manager set", zap.Error(err))
-		return err
+		return errors.Wrap(err, "cgroup set")
 	}
-	// 将容器进程加入到各个 subsystem 挂载对应的 cgroup 中
+	// apply container into all cgroups in subsystem
 	err = cgroupManager.Apply(p.Process.Pid)
 	if err != nil {
-		log.Errort("cgroup manager apply", zap.Error(err))
-		return err
+		return errors.Wrap(err, "cgroup apply")
 	}
 
 	if len(a.options.Network) > 0 {
 		// config container network
 		err = network.Init()
 		if err != nil {
-			log.Errort("network init", zap.Error(err))
-			return err
+			return errors.Wrap(err, "network init")
 		}
 		containerInfo := &container.Information{
 			Id:          containerId,
@@ -111,14 +104,12 @@ func (a *runA) Run() error {
 			PortMapping: a.options.Publish,
 		}
 		if err = network.Connect(a.options.Network, containerInfo); err != nil {
-			log.Errort("connect network", zap.Error(err))
-			return err
+			return errors.Wrap(err, "network connect")
 		}
 	}
 	err = notifyInitProcess(a.cmdArgs, wp)
 	if err != nil {
-		log.Errort("notify", zap.Error(err))
-		return err
+		return errors.Wrap(err, "notify")
 	}
 	log.Infof("tty %v", a.options.TTY)
 	if a.options.TTY {
@@ -127,8 +118,7 @@ func (a *runA) Run() error {
 		deleteContainerInfo(containerId)
 		container.DeleteWorkSpace(a.options.Volume, containerId)
 		if err != nil {
-			log.Errort("parent wait", zap.Error(err))
-			return err
+			return errors.Wrap(err, "init wait")
 		}
 	}
 	return nil
@@ -143,20 +133,15 @@ func (a *runA) PreRun() error {
 
 func notifyInitProcess(cmdArgs []string, wp *os.File) error {
 	command := strings.Join(cmdArgs, " ")
-	log.Infof("send cmd: %s", command)
 	_, err := wp.WriteString(command)
 	if err != nil {
-		log.Errort("write pipe", zap.Error(err))
-		return err
+		return errors.Wrap(err, "write pipe")
 	}
 	wp.Close()
-	log.Infof("send cmd: %s success", command)
 	return nil
 }
 
-// containerId 时间戳为种子，每次生成一个 10 以内的数字作为 letterBytes 数组的下标，最后拼
-// 接生成整个容器的 ID
-func containerId(n int) string {
+func ToContainerId(n int) string {
 	letterBytes := "1234567890"
 	rand.Seed(time.Now().UnixNano())
 	b := make([]byte, n)
@@ -189,20 +174,17 @@ func saveContainerInfo(containerPID int, commandArray []string, containerName, c
 	dirUrl := fmt.Sprintf(container.DefaultInfoLocation, containerName)
 	if utils.IsNotExist(dirUrl) {
 		if err := os.MkdirAll(dirUrl, 0622); err != nil {
-			log.Errorf("Mkdir error %s error %v", dirUrl, err)
-			return "", err
+			return "", errors.Errorf("mkdir: %s, %v", dirUrl, err)
 		}
 	}
 	fileName := dirUrl + "/" + container.ConfigName
 	file, err := os.Create(fileName)
 	defer file.Close()
 	if err != nil {
-		log.Errorf("create file %s error %v", fileName, err)
-		return "", err
+		return "", errors.Errorf("create: %s, %v", fileName, err)
 	}
 	if _, err := file.WriteString(infoStr); err != nil {
-		log.Errorf("write string error %v", err)
-		return "", err
+		return "", errors.Wrap(err, "write string")
 	}
 
 	return containerName, nil
@@ -211,6 +193,6 @@ func saveContainerInfo(containerPID int, commandArray []string, containerName, c
 func deleteContainerInfo(containerId string) {
 	dirURL := fmt.Sprintf(container.DefaultInfoLocation, containerId)
 	if err := os.RemoveAll(dirURL); err != nil {
-		log.Errorf("remove dir %s error %v", dirURL, err)
+		log.Warnf("remove dir %s error %v", dirURL, err)
 	}
 }

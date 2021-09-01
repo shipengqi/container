@@ -17,20 +17,22 @@
 - https://github.com/opencontainers/runc
 - https://github.com/coreos/go-iptables
 - https://github.com/containernetworking/plugins
+- https://www.frozentux.net/iptables-tutorial/cn/iptables-tutorial-cn-1.1.19.html
 
 ## TODO
 - 文件的存放目录和结构（容器信息，image，network, log 等）
 - image storage driver
 - 项目目录重构
-- network bridge driver 接口
 - cgroups 重构
 - 日志 console 和 file 分离
 - error definition
-- doc 重写（docs）
+- doc（几个重要功能的实现 namespace 隔离，cgroups, aufs, `-e` `--volum` `logs` cmd, `exec` cmd `exec -e`，network，portmapping）
 - clean container related resources
 - path.Join and fmt.Sprintf or string + string
-- clean iptables rules and route tables
+- clean iptables rules (route tables will auto clean)
 - unit test
+- iptables pkg create chain and add comments with containerid
+- mkdir all dirs in hook function
 
 ## Know issues
 - log command error
