@@ -31,7 +31,7 @@ func (a *commitA) Run() error {
 	imageTar := "/root/" + a.imageName + ".tar"
 	log.Debugf("commit: %s", imageTar)
 	if _, err := exec.Command("tar", "-czf", imageTar, "-C", rootfs, ".").CombinedOutput(); err != nil {
-		return errors.Errorf("tar: %s, %v", rootfs, err)
+		return errors.Errorf("tar: %s: %v", rootfs, err)
 	}
 	return nil
 }

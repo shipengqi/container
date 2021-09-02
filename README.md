@@ -34,6 +34,7 @@
 - iptables pkg create chain and add comments with containerid
 - mkdir all dirs in hook function
 - recover panic
+- log pipe
 
 ## Know issues
 - log command error

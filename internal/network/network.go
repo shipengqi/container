@@ -161,7 +161,7 @@ func configEndpointIpAddressAndRoute(ep *driver.Endpoint, cinfo *container.Infor
 	// ip netns exec ns1 ifconfig veth1 172.18.0.2/24 up
 	// set ip address of the end of Veth in container
 	if err = bridge.SetInterfaceIP(ep.Device.PeerName, interfaceIP.String()); err != nil {
-		return errors.Errorf("set interface ip: %v,%s", ep.Network, err)
+		return errors.Errorf("set interface ip: %s: %v", ep.Network, err)
 	}
 
 	// start up one end of Veth in container
@@ -193,7 +193,7 @@ func configEndpointIpAddressAndRoute(ep *driver.Endpoint, cinfo *container.Infor
 func enterContainerNetns(enLink *netlink.Link, cinfo *container.Information) func() {
 	f, err := os.OpenFile(fmt.Sprintf("/proc/%s/ns/net", cinfo.Pid), os.O_RDONLY, 0)
 	if err != nil {
-		log.Errorf("error get container net namespace, %v", err)
+		log.Errorf("error get container net namespace: %v", err)
 	}
 
 	nsFD := f.Fd()
@@ -202,17 +202,17 @@ func enterContainerNetns(enLink *netlink.Link, cinfo *container.Information) fun
 	// ip link set $link netns $ns
 	// ip link set veth0 netns ns1
 	if err = netlink.LinkSetNsFd(*enLink, int(nsFD)); err != nil {
-		log.Errorf("error set link netns , %v", err)
+		log.Errorf("error set link netns : %v", err)
 	}
 
 	origins, err := netns.Get()
 	if err != nil {
-		log.Errorf("get current netns, %v", err)
+		log.Errorf("get current netns: %v", err)
 	}
 
 	// sets namespace using syscall
 	if err = netns.Set(netns.NsHandle(nsFD)); err != nil {
-		log.Errorf("set netns, %v", err)
+		log.Errorf("set netns: %v", err)
 	}
 	return func() {
 		_ = netns.Set(origins)
@@ -226,7 +226,7 @@ func configPortMapping(ep *driver.Endpoint, cinfo *container.Information) error 
 	for _, pm := range ep.PortMapping {
 		portMapping := strings.Split(pm, ":")
 		if len(portMapping) != 2 {
-			log.Errorf("port mapping format error, %v", pm)
+			log.Errorf("port mapping format: %v", pm)
 			continue
 		}
 		iptablesCmd := fmt.Sprintf("-t nat -A PREROUTING -p tcp -m tcp --dport %s -j DNAT --to-destination %s:%s",
@@ -235,7 +235,7 @@ func configPortMapping(ep *driver.Endpoint, cinfo *container.Information) error 
 		cmd := exec.Command("iptables", strings.Split(iptablesCmd, " ")...)
 		output, err := cmd.Output()
 		if err != nil {
-			log.Errorf("iptables Output, %v", output)
+			log.Errorf("iptables Output: %v", output)
 			continue
 		}
 	}

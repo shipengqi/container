@@ -29,14 +29,14 @@ func NewRMAction(containerId string) Interface {
 func (a *rmA) Run() error {
 	containerInfo, err := getContainerInfoById(a.containerId)
 	if err != nil {
-		return errors.Errorf("get container: %s, %v", a.containerId, err)
+		return errors.Errorf("get container: %s: %v", a.containerId, err)
 	}
 	if containerInfo.Status != container.StatusStop {
 		return errors.New("cannot remove running container")
 	}
 	dirURL := fmt.Sprintf(container.DefaultInfoLocation, a.containerId)
 	if err := os.RemoveAll(dirURL); err != nil {
-		return errors.Errorf("remove %s, %v", dirURL, err)
+		return errors.Errorf("remove %s: %v", dirURL, err)
 	}
 
 	return nil

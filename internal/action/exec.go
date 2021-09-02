@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	EnvExecPid = "container_pid"
-	EnvExecCmd = "container_cmd"
+	EnvExecPid = "_QCONTAINER_PID"
+	EnvExecCmd = "_QCONTAINER_CMD"
 )
 
 type execA struct {
@@ -37,7 +37,7 @@ func NewExecAction(containerId string, cmdArray []string) Interface {
 func (a *execA) Run() error {
 	pid, err := getContainerPid(a.containerId)
 	if err != nil {
-		return errors.Errorf("get container pid: %s, %v", a.containerId, err)
+		return errors.Errorf("get container pid: %s: %v", a.containerId, err)
 	}
 	cmdStr := strings.Join(a.cmdArray, " ")
 	log.Infof("container pid %s", pid)
@@ -56,7 +56,7 @@ func (a *execA) Run() error {
 
 	if err := cmd.Run(); err != nil {
 		log.Errorf("Exec container %s error %v", a.containerId, err)
-		return errors.Errorf("exec container: %s, %v", a.containerId, err)
+		return errors.Errorf("exec container: %s: %v", a.containerId, err)
 	}
 	return nil
 }

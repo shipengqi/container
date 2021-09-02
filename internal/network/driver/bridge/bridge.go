@@ -110,7 +110,7 @@ func (b *bridged) initBridge(n *driver.Network) error {
 	}
 
 	if err := SetInterfaceUP(bridgeName); err != nil {
-		return errors.Errorf("set bridge up: %s, Error: %v", bridgeName, err)
+		return errors.Errorf("set bridge up: %s: %v", bridgeName, err)
 	}
 
 	if err := setupIPTables(bridgeName, n.IpRange); err != nil {
@@ -194,7 +194,7 @@ func setupIPTables(bridgeName string, subnet *net.IPNet) error {
 	cmd := exec.Command("iptables", strings.Split(iptablesCmd, " ")...)
 	output, err := cmd.Output()
 	if err != nil {
-		log.Errorf("iptables Output, %v", output)
+		log.Errorf("iptables Output: %v", output)
 	}
 	return err
 }

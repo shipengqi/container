@@ -1,6 +1,9 @@
 package log
 
 import (
+	"bufio"
+	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,8 +15,8 @@ import (
 
 var (
 	configureMutex sync.Mutex
-	// loggingConfigured will be set once logging has been configured via invoking `ConfigureLogging`.
-	// Subsequent invocations of `ConfigureLogging` would be no-op
+	// loggingConfigured will be set once logging has been configured via invoking `Configure`.
+	// Subsequent invocations of `Configure` would be no-op
 	loggingConfigured = false
 )
 
@@ -24,7 +27,8 @@ type Config struct {
 	// Directory to log to dir when filelogging is enabled
 	Directory string
 	// Filename is the name of the logfile which will be placed inside the directory
-	Filename string
+	Filename  string
+	LogPipeFd int
 }
 
 type Logger struct {
@@ -252,6 +256,64 @@ func Fatals(args ...interface{}) {
 	defaultZapLogger.Fatals(args...)
 }
 
+// AtLevel logs the message at a specific log level
+func AtLevel(level, msg string, fields ...zapcore.Field) {
+	switch level {
+	case zapcore.DebugLevel.String():
+		Debugt(msg, fields...)
+	case zapcore.PanicLevel.String():
+		Panict(msg, fields...)
+	case zapcore.ErrorLevel.String():
+		Errort(msg, fields...)
+	case zapcore.WarnLevel.String():
+		Warnt(msg, fields...)
+	case zapcore.InfoLevel.String():
+		Infot(msg, fields...)
+	case zapcore.FatalLevel.String():
+		Fatalt(msg, fields...)
+	default:
+		Warnt("Logging at unknown level", zap.Any("level", level))
+		Warnt(msg, fields...)
+	}
+}
+
+func ForwardLogs(logPipe io.ReadCloser) chan error {
+	done := make(chan error, 1)
+	s := bufio.NewScanner(logPipe)
+
+	go func() {
+		for s.Scan() {
+			processEntry(s.Bytes())
+		}
+		if err := logPipe.Close(); err != nil {
+			Errorf("closing log source: %v", err)
+		}
+		// The only error we want to return is when reading from
+		// logPipe has failed.
+		done <- s.Err()
+		close(done)
+	}()
+
+	return done
+}
+
+func processEntry(text []byte) {
+	if len(text) == 0 {
+		return
+	}
+
+	var jl struct {
+		Level string `json:"level"`
+		Msg   string `json:"msg"`
+	}
+	if err := json.Unmarshal(text, &jl); err != nil {
+		Errorf("failed to decode %q to json: %v", text, err)
+		return
+	}
+
+	AtLevel(jl.Level, jl.Msg)
+}
+
 // Configure sets up the logging framework
 //
 // In production, the container logs will be collected and file logging should be disabled. However,
@@ -272,8 +334,9 @@ func Configure(config Config) (*Logger, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Infot("logging configured",
+	logger.Infot("log configured",
 		zap.String("fileLevel", config.FileLevel),
+		zap.Int("LogPipeFd", config.LogPipeFd),
 		zap.String("logDirectory", config.Directory),
 		zap.String("fileName", config.Filename))
 
@@ -291,7 +354,7 @@ func newZapLogger(config Config) (*Logger, error) {
 	}
 
 	jsonEncCfg := zapcore.EncoderConfig{
-		TimeKey:        "@timestamp",
+		TimeKey:        "time",
 		LevelKey:       "level",
 		NameKey:        "logger",
 		CallerKey:      "caller",
@@ -307,19 +370,24 @@ func newZapLogger(config Config) (*Logger, error) {
 	})
 	fileEncoder := zapcore.NewJSONEncoder(jsonEncCfg)
 
-	if err := os.MkdirAll(config.Directory, 0744); err != nil {
-		return nil, err
+	var fd *os.File
+	if config.LogPipeFd > 0 {
+		fd = os.NewFile(uintptr(config.LogPipeFd), "logpipe")
+	} else {
+		if err := os.MkdirAll(config.Directory, 0744); err != nil {
+			return nil, err
+		}
+		file := filepath.Join(config.Directory, config.Filename)
+		fd, err = os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY|os.O_SYNC, 0644)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	file := filepath.Join(config.Directory, config.Filename)
-	fd, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return nil, err
-	}
 	core := zapcore.NewCore(fileEncoder, fd, fileLevelEnabler)
 	unSugared := zap.New(core)
 	return &Logger{
-		Unsugared: unSugared,
+		Unsugared:     unSugared,
 		SugaredLogger: unSugared.Sugar(),
 	}, nil
 }

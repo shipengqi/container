@@ -9,19 +9,19 @@ package nsenter
 #include <fcntl.h>
 __attribute__((constructor)) void enter_namespace(void) {
 	char *container_pid;
-	container_pid = getenv("container_pid");
+	container_pid = getenv("_QCONTAINER_PID");
 	if (container_pid) {
-		//fprintf(stdout, "got container_pid=%s\n", container_pid);
+		fprintf(stdout, "got _QCONTAINER_PID=%s\n", container_pid);
 	} else {
-		//fprintf(stdout, "missing container_pid env skip nsenter");
+		fprintf(stdout, "missing _QCONTAINER_PID env skip nsenter");
 		return;
 	}
 	char *container_cmd;
-	container_cmd = getenv("container_cmd");
+	container_cmd = getenv("_QCONTAINER_CMD");
 	if (container_cmd) {
-		//fprintf(stdout, "got container_cmd=%s\n", container_cmd);
+		//fprintf(stdout, "got _QCONTAINER_CMD=%s\n", container_cmd);
 	} else {
-		//fprintf(stdout, "missing container_cmd env skip nsenter");
+		//fprintf(stdout, "missing _QCONTAINER_CMD env skip nsenter");
 		return;
 	}
 	int i;

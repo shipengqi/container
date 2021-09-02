@@ -27,14 +27,14 @@ if tty {
     dirURL := fmt.Sprintf(DefaultInfoLocation, containerId)
     if utils.IsNotExist(dirURL) {
         if err := os.MkdirAll(dirURL, 0622); err != nil {
-            log.Errorf("NewInitProcess mkdir %s error %v", dirURL, err)
+            log.Errorf("NewParentProcess mkdir %s error %v", dirURL, err)
             return nil, nil, err
         }
     }
     stdLogFilePath := dirURL + LogFileName
     stdLogFile, err := os.Create(stdLogFilePath)
     if err != nil {
-        log.Errorf("NewInitProcess create file %s error %v", stdLogFilePath, err)
+        log.Errorf("NewParentProcess create file %s error %v", stdLogFilePath, err)
         return nil, nil, err
     }
     cmd.Stdout = stdLogFile
@@ -50,11 +50,11 @@ func (a *logA) Run() error {
 	file, err := os.Open(logFileLocation)
 	defer file.Close()
 	if err != nil {
-		return errors.Errorf("open: %s, %v", logFileLocation, err)
+		return errors.Errorf("open: %s: %v", logFileLocation, err)
 	}
 	content, err := ioutil.ReadAll(file)
 	if err != nil {
-		return errors.Errorf("read: %s, %v", logFileLocation, err)
+		return errors.Errorf("read: %s: %v", logFileLocation, err)
 	}
 	_, _ = fmt.Fprint(os.Stdout, string(content))
 	return nil

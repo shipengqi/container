@@ -46,14 +46,14 @@ func CreateReadOnlyLayer(imgName string) error {
 	imageTarUrl := filepath.Join(RootUrl, fmt.Sprintf("%s.tar", imgName))
 	if utils.IsNotExist(uncompressUrl) {
 		if err := os.Mkdir(uncompressUrl, 0777); err != nil {
-			return errors.Errorf("mkdir dir: %s, %v", uncompressUrl, err)
+			return errors.Errorf("mkdir dir: %s: %v", uncompressUrl, err)
 		}
 	}
 	if utils.IsNotExist(imageTarUrl) {
 		return errors.Errorf("%s not found", imageTarUrl)
 	}
 	if _, err := exec.Command("tar", "-xvf", imageTarUrl, "-C", uncompressUrl).CombinedOutput(); err != nil {
-		return errors.Errorf("uncompress dir: %s, %v", uncompressUrl, err)
+		return errors.Errorf("uncompress dir: %s: %v", uncompressUrl, err)
 	}
 
 	return nil
@@ -64,7 +64,7 @@ func CreateWriteLayer(containerId string) error {
 	writeUrl := fmt.Sprintf(WriteLayerUrl, containerId)
 	if utils.IsNotExist(writeUrl) {
 		if err := os.Mkdir(writeUrl, 0777); err != nil {
-			return errors.Errorf("mkdir dir: %s, %v", writeUrl, err)
+			return errors.Errorf("mkdir dir: %s: %v", writeUrl, err)
 		}
 	}
 	return nil
@@ -77,13 +77,13 @@ func CreateMountPoint(imgName, containerId string) (string, error) {
 	readUrl := filepath.Join(RootUrl, imgName)
 	if utils.IsNotExist(mntUrl) {
 		if err := os.Mkdir(mntUrl, 0777); err != nil {
-			return "", errors.Errorf("mkdir dir: %s, %v", mntUrl, err)
+			return "", errors.Errorf("mkdir dir: %s: %v", mntUrl, err)
 		}
 	}
 	// 创建 work 文件夹
 	if utils.IsNotExist(TmpWorkUrl) {
 		if err := os.Mkdir(TmpWorkUrl, 0777); err != nil {
-			return "", errors.Errorf("mkdir dir: %s, %v", TmpWorkUrl, err)
+			return "", errors.Errorf("mkdir dir: %s: %v", TmpWorkUrl, err)
 		}
 	}
 
@@ -127,7 +127,7 @@ func DeleteMountPoint(mntUrl string) {
 func DeleteWriteLayer(containerId string) {
 	writeUrl := fmt.Sprintf(WriteLayerUrl, containerId)
 	if err := os.RemoveAll(writeUrl); err != nil {
-		log.Warnf("remove dir: %s, %v", writeUrl, err)
+		log.Warnf("remove dir: %s: %v", writeUrl, err)
 	}
 }
 
@@ -148,7 +148,7 @@ func DeleteMountPointWithVolume(mntUrl string, volumeUrls []string) {
 	}
 
 	if err := os.RemoveAll(mntUrl); err != nil {
-		log.Warnf("Remove mountpoint dir: %s, %v", mntUrl, err)
+		log.Warnf("Remove mountpoint dir: %s: %v", mntUrl, err)
 	}
 }
 

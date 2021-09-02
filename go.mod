@@ -9,5 +9,5 @@ require (
 	github.com/vishvananda/netlink v1.1.0
 	github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df
 	go.uber.org/zap v1.17.0
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	golang.org/x/sys v0.0.0-20210510120138-977fb7262007
 )

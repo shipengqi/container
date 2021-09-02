@@ -29,7 +29,7 @@ func (a *psA) Run() error {
 	dirURL = dirURL[:len(dirURL)-1]
 	files, err := ioutil.ReadDir(dirURL)
 	if err != nil {
-		return errors.Errorf("read dir: %s, %v", dirURL, err)
+		return errors.Errorf("read dir: %s: %v", dirURL, err)
 	}
 	var containers []*container.Information
 	for _, file := range files {
@@ -64,7 +64,7 @@ func getContainerInfo(file os.FileInfo) (*container.Information, error) {
 	configFileDir = configFileDir + container.ConfigName
 	content, err := ioutil.ReadFile(configFileDir)
 	if err != nil {
-		return nil, errors.Errorf("read: %s, %v", configFileDir, err)
+		return nil, errors.Errorf("read: %s: %v", configFileDir, err)
 	}
 	var containerInfo container.Information
 	if err := json.Unmarshal(content, &containerInfo); err != nil {

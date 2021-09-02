@@ -31,12 +31,12 @@ func (a *logA) Run() error {
 	file, err := os.Open(logFileLocation)
 	defer file.Close()
 	if err != nil {
-		return errors.Errorf("open: %s, %v", logFileLocation, err)
+		return errors.Errorf("open: %s: %v", logFileLocation, err)
 	}
 
 	content, err := ioutil.ReadAll(file)
 	if err != nil {
-		return errors.Errorf("read: %s, %v", logFileLocation, err)
+		return errors.Errorf("read: %s: %v", logFileLocation, err)
 	}
 	_, _ = fmt.Fprint(os.Stdout, string(content))
 	return nil

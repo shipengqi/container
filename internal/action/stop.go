@@ -30,7 +30,7 @@ func NewStopAction(containerId string) Interface {
 func (a *stopA) Run() error {
 	info, err := getContainerInfoById(a.containerId)
 	if err != nil {
-		return errors.Errorf("get container: %s, %v", a.containerId, err)
+		return errors.Errorf("get container: %s: %v", a.containerId, err)
 	}
 	pidInt, err := strconv.Atoi(info.Pid)
 	if err != nil {
@@ -38,19 +38,19 @@ func (a *stopA) Run() error {
 	}
 
 	if err := syscall.Kill(pidInt, syscall.SIGTERM); err != nil {
-		return errors.Errorf("stop container: %s, %v", a.containerId, err)
+		return errors.Errorf("stop container: %s: %v", a.containerId, err)
 	}
 
 	info.Status = container.StatusStop
 	info.Pid = " "
 	newContentBytes, err := json.Marshal(info)
 	if err != nil {
-		return errors.Errorf("marshal container: %s, %v", a.containerId, err)
+		return errors.Errorf("marshal container: %s: %v", a.containerId, err)
 	}
 	dirURL := fmt.Sprintf(container.DefaultInfoLocation, a.containerId)
 	configFilePath := dirURL + container.ConfigName
 	if err := ioutil.WriteFile(configFilePath, newContentBytes, 0622); err != nil {
-		log.Warnf("write: %s, %v", configFilePath, err)
+		log.Warnf("write: %s: %v", configFilePath, err)
 	}
 	log.Info(a.containerId)
 	return nil

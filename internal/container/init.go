@@ -1,9 +1,11 @@
 package container
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -26,7 +28,7 @@ syscall.Exec 底层调用了 int execve(const char *filename, char *const argv[]
 指定的进程了。这是 runc 的实现方式之一。
 */
 func InitProcess() error {
-	cmdArgs, err := readParentPipe()
+	cmdArgs, err := readParentInitPipe()
 	if err != nil {
 		return errors.Wrap(err, "read parent pipe")
 	}
@@ -52,15 +54,24 @@ func InitProcess() error {
 	if err != nil {
 		return errors.Wrap(err, "syscall.Exec")
 	}
+	log.Debug("syscall.Exec done")
 	return nil
 }
 
-func readParentPipe() ([]string, error) {
-	// uintptr(3)，就是指 index 为 3 的文件描述符
-	pipe := os.NewFile(uintptr(3), "pipe")
+func readParentInitPipe() ([]string, error) {
+	initPipeFdStr, exists := os.LookupEnv("_QCONTAINER_INITPIPE")
+	if !exists {
+		panic("_QCONTAINER_INITPIPE not found")
+	}
+	initPipeFd, err := strconv.Atoi(initPipeFdStr)
+	if err != nil {
+		panic(fmt.Sprintf("_QCONTAINER_INITPIPE=%s to int: %s", initPipeFdStr, err))
+	}
+
+	pipe := os.NewFile(uintptr(initPipeFd), "initpipe")
 	msg, err := ioutil.ReadAll(pipe)
 	if err != nil {
-		return nil, errors.Wrap(err, "read pipe")
+		return nil, errors.Wrap(err, "read init pipe")
 	}
 	return strings.Split(string(msg), " "), nil
 }

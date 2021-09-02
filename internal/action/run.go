@@ -58,7 +58,8 @@ func NewRunAction(args []string, options *RunActionOptions) Interface {
 func (a *runA) Run() error {
 	log.Debugf("***** %s Run *****", strings.ToUpper(a.name))
 	containerId := ToContainerId(10)
-	p, wp, err := container.NewInitProcess(a.options.TTY, a.options.Volume, containerId, a.imgName, a.options.Envs)
+	p, parentInitWp, err := container.NewParentProcess(a.options.TTY, a.options.Volume, containerId, a.imgName, a.options.Envs)
+
 	if err := p.Start(); err != nil {
 		return errors.Wrap(err, "init run")
 	}
@@ -107,7 +108,7 @@ func (a *runA) Run() error {
 			return errors.Wrap(err, "network connect")
 		}
 	}
-	err = notifyInitProcess(a.cmdArgs, wp)
+	err = notifyInitProcess(a.cmdArgs, parentInitWp)
 	if err != nil {
 		return errors.Wrap(err, "notify")
 	}
@@ -131,13 +132,13 @@ func (a *runA) PreRun() error {
 	return nil
 }
 
-func notifyInitProcess(cmdArgs []string, wp *os.File) error {
+func notifyInitProcess(cmdArgs []string, parentInitWp *os.File) error {
 	command := strings.Join(cmdArgs, " ")
-	_, err := wp.WriteString(command)
+	_, err := parentInitWp.WriteString(command)
 	if err != nil {
-		return errors.Wrap(err, "write pipe")
+		return errors.Wrap(err, "write child init pipe")
 	}
-	wp.Close()
+	parentInitWp.Close()
 	return nil
 }
 
@@ -174,14 +175,14 @@ func saveContainerInfo(containerPID int, commandArray []string, containerName, c
 	dirUrl := fmt.Sprintf(container.DefaultInfoLocation, containerName)
 	if utils.IsNotExist(dirUrl) {
 		if err := os.MkdirAll(dirUrl, 0622); err != nil {
-			return "", errors.Errorf("mkdir: %s, %v", dirUrl, err)
+			return "", errors.Errorf("mkdir: %s: %v", dirUrl, err)
 		}
 	}
 	fileName := dirUrl + "/" + container.ConfigName
 	file, err := os.Create(fileName)
 	defer file.Close()
 	if err != nil {
-		return "", errors.Errorf("create: %s, %v", fileName, err)
+		return "", errors.Errorf("create: %s: %v", fileName, err)
 	}
 	if _, err := file.WriteString(infoStr); err != nil {
 		return "", errors.Wrap(err, "write string")
