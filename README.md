@@ -24,8 +24,7 @@
 - image storage driver
 - 项目目录重构
 - cgroups 重构
-- error definition
-- doc（几个重要功能的实现 namespace 隔离，cgroups, aufs, `-e` `--volum` `logs` cmd, `exec` cmd `exec -e`，network，portmapping）
+- doc（几个重要功能的实现 namespace 隔离，cgroups, aufs, `-e` `--volume` `logs` cmd, `exec` cmd `exec -e`，network，portmapping）
 - clean container related resources, iptables rules (route tables will auto clean)
 - path.Join and fmt.Sprintf or string + string
 - iptables pkg create chain and add comments with containerid
@@ -33,12 +32,13 @@
 - recover panic
 - log pipe cannot close
 - 进程间 error 的传递
+- 删除创建文件之前 check 文件是否存在
 
 ## Know issues
 - log command error
 - cannot get $PATH
-- `--cpu` error
 - exit throw error
+- container status sync error (stop, rm -f cmd)
 
 ```bash
 2021-08-31T12:16:39.147+0800    ERROR   parent wait     {"error": "exit status 130"}

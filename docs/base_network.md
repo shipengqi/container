@@ -323,5 +323,4 @@ num  target     prot opt source               destination
     link/ether 4e:52:21:65:45:a1 brd ff:ff:ff:ff:ff:ff
 63: 71960@if62: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master testbridge state UP mode DEFAULT group default qlen 1000
     link/ether 4e:52:21:65:45:a1 brd ff:ff:ff:ff:ff:ff link-netnsid 0
-
 ```

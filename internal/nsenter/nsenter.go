@@ -11,9 +11,9 @@ __attribute__((constructor)) void enter_namespace(void) {
 	char *container_pid;
 	container_pid = getenv("_QCONTAINER_PID");
 	if (container_pid) {
-		fprintf(stdout, "got _QCONTAINER_PID=%s\n", container_pid);
+		//fprintf(stdout, "got _QCONTAINER_PID=%s\n", container_pid);
 	} else {
-		fprintf(stdout, "missing _QCONTAINER_PID env skip nsenter");
+		//fprintf(stdout, "missing _QCONTAINER_PID env skip nsenter");
 		return;
 	}
 	char *container_cmd;

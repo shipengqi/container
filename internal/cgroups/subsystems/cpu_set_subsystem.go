@@ -1,9 +1,10 @@
 package subsystems
 
 import (
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 )
 
 type CpusetSubSystem struct {}
@@ -21,21 +22,21 @@ func (s *CpusetSubSystem) Set(cgrouppath string, res *Resources) error {
 	if err != nil {
 		return err
 	}
-	// 这个版本下如果 --cpu 没有设置会报下面的错
+	// 下如果 --cpu 没有设置会报下面的错
 	// set tasks: write /sys/fs/cgroup/cpuset/q.container.cgroup/tasks: no space left on device
 	// 因为写入 pid 到 tasks 之前，cpuset.cpus 和 cpuset.mems 需要设置
-	if len(res.CpuSet) > 0 {
-		if err := ioutil.WriteFile(
-			filepath.Join(subsysCgroupPath, FileNameCpuSetMems),
-			[]byte("0"), 0644); err != nil {
-			return errors.Errorf("set %s: %v", FileNameCpuSetMems, err)
-		}
-		if err := ioutil.WriteFile(
-			filepath.Join(subsysCgroupPath, FileNameCpuSetCpus),
-			[]byte(res.CpuSet), 0644); err != nil {
-			return errors.Errorf("set %s: %v", FileNameCpuSetCpus, err)
-		}
+	// 加入默认值
+	if err := ioutil.WriteFile(
+		filepath.Join(subsysCgroupPath, FileNameCpuSetMems),
+		[]byte("0"), 0644); err != nil {
+		return errors.Errorf("set %s: %v", FileNameCpuSetMems, err)
 	}
+	if err := ioutil.WriteFile(
+		filepath.Join(subsysCgroupPath, FileNameCpuSetCpus),
+		[]byte(res.CpuSet), 0644); err != nil {
+		return errors.Errorf("set %s: %v", FileNameCpuSetCpus, err)
+	}
+
 	return nil
 }
 
