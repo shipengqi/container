@@ -55,7 +55,6 @@ func (a *execA) Run() error {
 	cmd.Env = append(os.Environ(), containerEnvs...)
 
 	if err := cmd.Run(); err != nil {
-		log.Errorf("Exec container %s error %v", a.containerId, err)
 		return errors.Errorf("exec container: %s: %v", a.containerId, err)
 	}
 	return nil

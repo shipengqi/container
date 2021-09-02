@@ -41,7 +41,7 @@ func InitProcess() error {
 	if err != nil {
 		return err
 	}
-	// exec.LookPath 寻找绝对路径
+	// exec.LookPath
 	log.Debugf("find cmd path: %s", cmdArgs[0])
 	cmdPath, err := exec.LookPath(cmdArgs[0])
 	if err != nil {
@@ -74,4 +74,22 @@ func readParentInitPipe() ([]string, error) {
 		return nil, errors.Wrap(err, "read init pipe")
 	}
 	return strings.Split(string(msg), " "), nil
+}
+
+// closeParentLogPipe Close the log pipe fd so the parent's ForwardLogs can exit.
+func closeParentLogPipe() {
+	logPipeFdStr, exists := os.LookupEnv("_QCONTAINER_LOGPIPE")
+	if !exists {
+		panic("_QCONTAINER_INITPIPE not found")
+	}
+	logPipeFd, err := strconv.Atoi(logPipeFdStr)
+	if err != nil {
+		panic(fmt.Sprintf("_QCONTAINER_LOGPIPE=%s to int: %s", logPipeFdStr, err))
+	}
+	log.Debugf("_QCONTAINER_LOGPIPE=%s", logPipeFdStr)
+	pipe := os.NewFile(uintptr(logPipeFd), "logpipe")
+	err = pipe.Close()
+	if err != nil {
+		log.Debugf("Close %v", err)
+	}
 }

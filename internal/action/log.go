@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 
@@ -27,7 +28,7 @@ func NewLogAction(containerId string) Interface {
 
 func (a *logA) Run() error {
 	dirURL := fmt.Sprintf(container.DefaultInfoLocation, a.containerId)
-	logFileLocation := dirURL + container.LogFileName
+	logFileLocation := filepath.Join(dirURL, container.LogFileName)
 	file, err := os.Open(logFileLocation)
 	defer file.Close()
 	if err != nil {

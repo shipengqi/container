@@ -34,7 +34,7 @@ func newRunCmd() *cobra.Command {
 	f.BoolVarP(&o.Detach, "detach", "d",false, "Run container in background and print container ID")
 	f.StringVar(&o.Name, "name", "", "Assign a name to the container")
 	f.StringSliceVarP(&o.Envs, "env", "e", nil, "Set environment variables")
-	f.StringVar(&o.Network, "network", "default", "Connect a container to a network")
+	f.StringVar(&o.Network, "network", "qcontainer0", "Connect a container to a network")
 	f.StringSliceVarP(&o.Publish, "publish", "p", nil, "Publish a container's port(s) to the host")
 	return c
 }

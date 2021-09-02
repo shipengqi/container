@@ -82,6 +82,19 @@ func List() {
 	}
 }
 
+func Exists(network string) bool {
+	for _, nw := range networks {
+		if nw.Name == network {
+			return true
+		}
+	}
+	_, err := net.InterfaceByName(network)
+	if err == nil || !strings.Contains(err.Error(), "no such network interface") {
+		return true
+	}
+	return false
+}
+
 func Delete(name string) error {
 	nw, ok := networks[name]
 	if !ok {

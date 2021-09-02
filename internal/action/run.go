@@ -129,6 +129,16 @@ func (a *runA) PreRun() error {
 	if a.options.TTY && a.options.Detach {
 		return errors.New("--tty and --detach flags cannot both provided")
 	}
+	err := network.Init()
+	if err != nil {
+		return err
+	}
+	if !network.Exists("qcontainer0") {
+		err = network.Create("bridge", "qcontainer0", "172.99.0.0/24")
+		if err != nil {
+			return errors.Wrap(err, "create betwork qcontainer0")
+		}
+	}
 	return nil
 }
 

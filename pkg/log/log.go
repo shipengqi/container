@@ -288,8 +288,6 @@ func ForwardLogs(logPipe io.ReadCloser) chan error {
 		if err := logPipe.Close(); err != nil {
 			Errorf("closing log source: %v", err)
 		}
-		// The only error we want to return is when reading from
-		// logPipe has failed.
 		done <- s.Err()
 		close(done)
 	}()
