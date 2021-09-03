@@ -65,29 +65,6 @@
 ## Release
 - 具体功能的实现可以参考 [release 的各个版本](https://github.com/shipengqi/container/releases?after=v1.5)
 
-## TODO
-- 结构重构（容器信息，image，network, log 等）
-- image storage driver
-- [文档](./docs)，重要模块的实现原理
-  - namespace 隔离
-  - cgroups,
-  - aufs/overlay
-  - `-e` 参数
-  - `--volume` 参数
-  - `logs` 命令, 
-  - `exec` 命令 
-  - `exec -e` 参数
-  - network
-  - port mapping
-- 容器退出或者强制删除后，清楚相关资源（workspace，mount point，iptables rules，container info，etc.）
-- 创建 iptables chain，iptables rules 添加包含 containerid 的注释
-- 构建 hook 函数，用来准备容器运行资源（创建目录）
-- recover panic
-- log pipe cannot close
-- 进程间 error 的传递
-- 删除创建文件之前 check 文件是否存在
-- 所有容器资源目录重命名
-
 ## Know issues
 - logs command error
 - cannot get $PATH
@@ -105,20 +82,27 @@
     2021-08-31T12:19:29.703+0800    ERROR   container.Execute(): exit status 130
   ```
 
-## 参考
-- <<自己动手写 Docker>>
-- https://github.com/xianlubird/mydocker
-- https://github.com/xianlubird/cka-pre
-- https://cloud.tencent.com/developer/section/1145002 text/tabwriter
-- https://github.com/vishvananda/netlink 操作网络接口、路由表等配置的库
-- https://github.com/vishvananda/netns Go 语言版 netns
-- https://github.com/huataihuang/cloud-atlas
-- https://cloud-atlas.readthedocs.io/zh_CN/latest/docker/index.html
-- https://xie.infoq.cn/article/11d413217d5186feed013122e
-- https://github.com/sevlyar/go-daemon
-- https://blog.csdn.net/kikajack/article/details/80457841
-- https://www.cnblogs.com/liyuanhong/p/13585654.html
-- https://github.com/opencontainers/runc
-- https://github.com/coreos/go-iptables
-- https://github.com/containernetworking/plugins
-- https://www.frozentux.net/iptables-tutorial/cn/iptables-tutorial-cn-1.1.19.html
+## TODO
+- 结构重构（容器信息，image，network, log 等）
+- image storage driver
+- 容器退出或者强制删除后，清楚相关资源（workspace，mount point，iptables rules，container info，etc.）
+- 创建 iptables chain，iptables rules 添加包含 containerid 的注释
+- 构建 hook 函数，用来准备容器运行资源（创建目录）
+- recover panic
+- log pipe cannot close
+- 进程间 error 的传递
+- 删除创建文件之前 check 文件是否存在
+- 所有容器资源目录重命名
+- 文档，重要模块的实现原理
+  - namespace 隔离
+  - cgroups,
+  - aufs/overlay
+  - `-e` 参数
+  - `--volume` 参数
+  - `logs` 命令,
+  - `exec` 命令
+  - `exec -e` 参数
+  - network
+  - port mapping
+
+## [参考](./reference.md)
