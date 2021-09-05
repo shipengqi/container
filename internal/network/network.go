@@ -171,7 +171,7 @@ func configEndpointIpAddressAndRoute(ep *driver.Endpoint, cinfo *container.Infor
 	interfaceIP := *ep.Network.IpRange
 	interfaceIP.IP = ep.IPAddress
 
-	// ip netns exec ns1 ifconfig veth1 172.18.0.2/24 up
+	// ip netns exec <ns> ifconfig <veth device> <ip range> up
 	// set ip address of the end of Veth in container
 	if err = bridge.SetInterfaceIP(ep.Device.PeerName, interfaceIP.String()); err != nil {
 		return errors.Errorf("set interface ip: %s: %v", ep.Network, err)
@@ -190,6 +190,7 @@ func configEndpointIpAddressAndRoute(ep *driver.Endpoint, cinfo *container.Infor
 	_, cidr, _ := net.ParseCIDR("0.0.0.0/0")
 
 	// ip netns exec ns1 route add 0.0.0.0/0 dev veth1
+	// set default route
 	defaultRoute := &netlink.Route{
 		LinkIndex: peerLink.Attrs().Index,
 		Gw:        ep.Network.IpRange.IP,
@@ -212,7 +213,7 @@ func enterContainerNetns(enLink *netlink.Link, cinfo *container.Information) fun
 	nsFD := f.Fd()
 	runtime.LockOSThread()
 
-	// ip link set $link netns $ns
+	// ip link set <veth device> netns <ns>
 	// ip link set veth0 netns ns1
 	if err = netlink.LinkSetNsFd(*enLink, int(nsFD)); err != nil {
 		log.Errorf("error set link netns : %v", err)

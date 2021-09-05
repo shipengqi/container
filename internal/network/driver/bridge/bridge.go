@@ -44,13 +44,14 @@ func (b *bridged) Connect(network string, endpoint *driver.Endpoint) error {
 	la.MasterIndex = br.Attrs().Index
 
 	// create a Veth object
-	// PeerName the other end of the Veth
+	// PeerName the other end of the Veth (container end)
 	endpoint.Device = netlink.Veth{
 		LinkAttrs: la,
 		PeerName:  "cif-" + la.Name,
 	}
 
 	// LinkAdd create Veth Interface
+	// ip link add veth0 type veth peer name veth1
 	if err = netlink.LinkAdd(&endpoint.Device); err != nil {
 		return errors.Errorf("Add Endpoint Device: %v", err)
 	}
@@ -162,7 +163,7 @@ func SetInterfaceIP(name string, rawIP string) error {
 		return err
 	}
 
-	// route add -net 192.168.0.0/24 dev br0
+	// route add -net 192.168.0.0/24 dev br0 (default)
 	addr := &netlink.Addr{
 		IPNet: ipNet,
 		Label: "",
