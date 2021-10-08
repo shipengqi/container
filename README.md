@@ -85,7 +85,7 @@
 ## TODO
 - 结构重构（容器信息，image，network, log 等）
 - image storage driver
-- 容器退出或者强制删除后，清楚相关资源（workspace，mount point，iptables rules，container info，etc.）
+- 容器退出或者强制删除后，清除相关资源（workspace，mount point，iptables rules，container info，etc.）
 - 创建 iptables chain，iptables rules 添加包含 containerid 的注释
 - 构建 hook 函数，用来准备容器运行资源（创建目录）
 - recover panic
@@ -95,7 +95,7 @@
 - 所有容器资源目录重命名
 - 文档，重要模块的实现原理
   - namespace 隔离
-  - cgroups,
+  - cgroups
   - aufs/overlay
   - `-e` 参数
   - `--volume` 参数
